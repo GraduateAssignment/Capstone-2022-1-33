@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.icu.text.SimpleDateFormat
 import android.net.Uri
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.util.Size
 import androidx.fragment.app.Fragment
@@ -20,6 +21,7 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.pnu.smartwalkingstickapp.R
@@ -41,6 +43,7 @@ class CameraXFragment : Fragment() {
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
+    private lateinit var textToSpeech: TextToSpeech
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -61,12 +64,21 @@ class CameraXFragment : Fragment() {
         binding.cameraButton.setOnClickListener { takePhoto() }
         outputDirectory = getOutputDirectory()
 
+        textToSpeech = TextToSpeech(safeContext, TextToSpeech.OnInitListener {
+            if (it == TextToSpeech.SUCCESS) {
+                // TODO: 한글 패치
+                val result = textToSpeech.setLanguage(Locale.ENGLISH)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e("TTS","해당언어는 지원되지 않습니다.")
+                    return@OnInitListener
+                }
+            }
+        })
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         when(val cameraPermission = ContextCompat.checkSelfPermission(safeContext, Manifest.permission.CAMERA)){
             PackageManager.PERMISSION_GRANTED ->  startCamera()
             else -> requestPermission()
@@ -102,7 +114,9 @@ class CameraXFragment : Fragment() {
                     val image = InputImage.fromMediaImage(mediaImage, rotationDegrees)
                     val result = recognizer.process(image)
                         .addOnSuccessListener {
-                            Log.d("Success!!", it.text)
+                            for (block in it.textBlocks) {
+                                playTextToSpeech(block.text)
+                            }
                         }
                         .addOnFailureListener {
                             Log.d("Fail", "!!")
@@ -154,6 +168,11 @@ class CameraXFragment : Fragment() {
             File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
         }
         return if (mediaDir != null && mediaDir.exists()) mediaDir else activity?.filesDir!!
+    }
+
+    private fun playTextToSpeech(text: String){
+        Log.d("Speech:", text)
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     companion object {
