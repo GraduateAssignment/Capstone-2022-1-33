@@ -12,11 +12,13 @@
 #define vibr 4
 #define buzz 46
 #define serv 48
-#define intr1 2
-#define intr2 3
-#define intr3 20
-#define intr4 21
+#define intr1 3
+#define intr2 18
+#define intr3 19
+#define intr4 20
+#define intr5 21
 
+void toggleUW();
 void takePicture();
 void takeOCR();
 void findWay();
