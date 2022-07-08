@@ -44,18 +44,6 @@ void toggleLED(){
 	}
 	togLED = !togLED;
 }
-/* UW */
-double calcDistance(){
-	digitalWrite(trig, LOW);
-	delayMicroseconds(2);
-	digitalWrite(trig, HIGH);
-	delayMicroseconds(10);
-	digitalWrite(trig, LOW);
-	
-	const unsigned long duration = pulseIn(echo, HIGH);
-	//int distance = duration / 29 / 2;
-	return (duration / 5.8);
-}
 /* vibration module */
 void vibration(bool flag){
 	if(flag){

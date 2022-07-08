@@ -14,10 +14,10 @@
         특정 상황 발생 시 - vibration() 호출
     능동 부저 - buzz - 46 Pin(O)
         특정 상황 발생 시 - alarm() 호출
-    LED (O) - ledR, ledG, ledB - 30 32 34 Pin
-        버튼 4 입력 시 - toggleLED() 호출
     Ultrasonic Wave (O) - trig, echo - 43(Trig) 42(Echo) Pin
-        항상 거리 측정 - calcDistance() 호출
+        거리감지 On - ping_cm() 호출
+    LED (O) - ledR, ledG, ledB - 30 32 34 Pin
+        버튼 5 입력 시 - toggleLED() 호출
     Servo (O) - serv - 48 Pin
         좌 / 우 명령에 따라 좌우 회전 - turnServo() 호출
 */
@@ -26,10 +26,10 @@ volatile bool togLED = false, togUW = false;
 bool flag = false;
 short preBtn[4] = {LOW, LOW, LOW, LOW};
 short curBtn[4] = {LOW, LOW, LOW, LOW};
-long distance;
+int distance;
 void (*fp)() = NULL;
 Servo myServo;
-
+NewPing sonar(trig, echo, 200);
 void setup(){
   Serial.begin(9600);
   Serial2.begin(9600);
@@ -49,8 +49,6 @@ void setup(){
   pinMode(ledR, OUTPUT);
   pinMode(ledG, OUTPUT);
   pinMode(ledB, OUTPUT);
-  pinMode(trig, OUTPUT);
-  pinMode(echo, INPUT);
   pinMode(vibr, OUTPUT);
   pinMode(buzz, OUTPUT);
   pinMode(serv, OUTPUT);
@@ -76,11 +74,11 @@ void loop(){
     delay(300);
   }
   if(togUW){
-    distance = calcDistance();
+    distance = sonar.ping_cm();
     Serial.print("distance: ");
     Serial.print(distance);
-    Serial.println("mm");
-    if(distance < 50.0){
+    Serial.println("cm");
+    if(distance < 5){
       vibration(true);
       alarm(true);
     }

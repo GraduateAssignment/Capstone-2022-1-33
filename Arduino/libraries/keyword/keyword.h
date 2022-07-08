@@ -3,6 +3,7 @@
 
 #include <SoftwareSerial.h>
 #include <Servo.h>
+#include <NewPing.h>
 
 #define ledR 30
 #define ledG 32
@@ -23,7 +24,6 @@ void takePicture();
 void takeOCR();
 void findWay();
 void toggleLED();
-double calcDistance();
 void vibration(bool);
 void alarm(bool);
 void turnServo(Servo, int);
