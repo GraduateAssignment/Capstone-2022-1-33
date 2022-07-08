@@ -1,54 +1,48 @@
 #include "Arduino.h"
 #include "keyword.h"
 
-/* btn1 */
-void takePicture(){
-	/* Chattering */
-	delayMicroseconds(2000);
+/* intr1 */
+void toggleUW(){
+	delayMicroseconds(2000); /* Chattering */
 	if(digitalRead(intr1)!=LOW) return;
+	extern bool togUW;
+	togUW = !togUW;
+}
+/* intr2 */
+void takePicture(){
+	delayMicroseconds(2000);
+	if(digitalRead(intr2)!=LOW) return;
 	digitalWrite(ledR,255);
 	digitalWrite(ledG,0);
 	digitalWrite(ledB,0);
 }
-/* btn2 */
+/* intr3 */
 void takeOCR(){
 	delayMicroseconds(2000);
-	if(digitalRead(intr2)!=LOW) return;
+	if(digitalRead(intr3)!=LOW) return;
 	digitalWrite(ledR,255);
 	digitalWrite(ledG,228);
 	digitalWrite(ledB,0);
 }
-/* btn3 */
+/* intr4 */
 void findWay(){
 	delayMicroseconds(2000);
-	if(digitalRead(intr3)!=LOW) return;
+	if(digitalRead(intr4)!=LOW) return;
 	digitalWrite(ledR,0);
 	digitalWrite(ledG,255);
 	digitalWrite(ledB,0);
 }
-/* btn4 */
+/* intr5 */
 void toggleLED(){
 	delayMicroseconds(2000);
-	if(digitalRead(intr4)!=LOW) return;
-	extern bool toggle;
-	if(toggle == true){
+	if(digitalRead(intr5)!=LOW) return;
+	extern bool togLED;
+	if(togLED == true){
 		digitalWrite(ledR, 0);
 		digitalWrite(ledG, 0);
 		digitalWrite(ledB, 0);
 	}
-	toggle = !toggle;
-}
-/* UW */
-double calcDistance(){
-	digitalWrite(trig, LOW);
-	delayMicroseconds(2);
-	digitalWrite(trig, HIGH);
-	delayMicroseconds(10);
-	digitalWrite(trig, LOW);
-	
-	const unsigned long duration = pulseIn(echo, HIGH);
-	//int distance = duration / 29 / 2;
-	return (duration / 5.8);
+	togLED = !togLED;
 }
 /* vibration module */
 void vibration(bool flag){
