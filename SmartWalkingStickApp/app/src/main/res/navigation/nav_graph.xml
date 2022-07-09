@@ -13,5 +13,15 @@
         android:id="@+id/nav_ocr_fragment"
         android:name="com.pnu.smartwalkingstickapp.ui.ocr_task.OcrFragment"
         android:label="OcrFragment"
-        tools:layout="@layout/fragment_ocr"/>
+        tools:layout="@layout/fragment_ocr">
+        <action
+            android:id="@+id/action_nav_ocr_fragment_to_nav_camera_x_fragment"
+            app:destination="@id/nav_camera_x_fragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_camera_x_fragment"
+        android:name="com.pnu.smartwalkingstickapp.ui.ocr_task.CameraXFragment"
+        android:label="CameraXFragment"
+        tools:layout="@layout/fragment_camera_x"/>
 </navigation>
