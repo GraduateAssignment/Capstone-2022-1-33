@@ -5,6 +5,12 @@
 #include <Servo.h>
 #include <NewPing.h>
 
+#define vibr 4
+#define intr1 3
+#define intr2 18
+#define intr3 19
+#define intr4 20
+#define intr5 21
 #define ledR 30
 #define ledG 32
 #define ledB 34
@@ -14,16 +20,10 @@
 #define echo2 43
 #define trig3 44
 #define echo3 45
-#define vibr 4
 #define buzz 46
 #define serv 48
-#define intr1 3
-#define intr2 18
-#define intr3 19
-#define intr4 20
-#define intr5 21
 
-void toggleUW();
+void toggleSonar();
 void takePicture();
 void takeOCR();
 void findWay();

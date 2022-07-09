@@ -2,11 +2,11 @@
 #include "keyword.h"
 
 /* intr1 */
-void toggleUW(){
+void toggleSonar(){
 	delayMicroseconds(2000); /* Chattering */
 	if(digitalRead(intr1)!=LOW) return;
-	extern bool togUW;
-	togUW = !togUW;
+	extern bool togSonar;
+	togSonar = !togSonar;
 }
 /* intr2 */
 void takePicture(){
@@ -63,13 +63,13 @@ void alarm(bool flag){
 	}
 }
 /* Servo */
-void turnServo(Servo myServo, int dir){
+void turnServo(Servo servo, int dir){
 	dir *= 90;
-	myServo.write(dir);
+	servo.write(dir);
 }
 /* Bluetooth */
 void callBLE(char ch){
-	extern Servo myServo;
+	extern Servo servo;
 	if(ch == 'a'){
       takePicture();
     }
@@ -83,15 +83,15 @@ void callBLE(char ch){
       toggleLED();
     }
 	else if(ch == 'e'){
-		turnServo(myServo, 2);
+		turnServo(servo, 2);
 	}
 	else if(ch == 'f'){
-		turnServo(myServo, 0);
+		turnServo(servo, 0);
 	}
 	else if(ch == 'g'){
-		turnServo(myServo, 1);
+		turnServo(servo, 1);
 	}
 	else if(ch == 'h'){
-		toggleUW();
+		toggleSonar();
 	}
 }

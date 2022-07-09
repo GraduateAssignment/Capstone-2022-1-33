@@ -25,9 +25,9 @@
         좌 / 우 명령에 따라 좌우 회전 - turnServo() 호출
 */
 #include <keyword.h>
-volatile bool togLED = false, togUW = false;
+volatile bool togLED = false, togSonar = false;
 bool flag = false;
-Servo myServo;
+Servo servo;
 NewPing sonar[3] = {
   NewPing(trig1, echo1, 200),
   NewPing(trig2, echo2, 200),
@@ -39,10 +39,10 @@ void setup(){
   Serial.begin(9600);
   Serial2.begin(9600);
   Serial.println("HC-06 Setting...");
-  myServo.attach(48);
+  servo.attach(48);
   Serial.println("START");
   pinMode(intr1, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(intr1), toggleUW, FALLING);
+  attachInterrupt(digitalPinToInterrupt(intr1), toggleSonar, FALLING);
   pinMode(intr2, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(intr2), takePicture, FALLING);
   pinMode(intr3, INPUT_PULLUP);
@@ -78,7 +78,7 @@ void loop(){
     flag = !flag;
     delay(300);
   }
-  if(togUW){
+  if(togSonar){
     int ret=987654321;
     for(int i=0;i<3;i++){
       distance[i] = sonar[i].ping_cm();
