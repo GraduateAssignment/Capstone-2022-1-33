@@ -91,4 +91,7 @@ void callBLE(char ch){
 	else if(ch == 'g'){
 		turnServo(myServo, 1);
 	}
+	else if(ch == 'h'){
+		toggleUW();
+	}
 }

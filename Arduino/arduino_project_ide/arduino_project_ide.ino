@@ -14,8 +14,11 @@
         특정 상황 발생 시 - vibration() 호출
     능동 부저 - buzz - 46 Pin(O)
         특정 상황 발생 시 - alarm() 호출
-    Ultrasonic Wave (O) - trig, echo - 43(Trig) 42(Echo) Pin
-        거리감지 On - ping_cm() 호출
+    Ultrasonic Wave (O) - NewPing sonar[]
+        [0] - trig1, echo1 - 40, 41
+        [1] - trig2, echo2 - 42, 43
+        [2] - trig3, echo3 - 44, 45
+        5cm 이내 거리감지 시 - ping_cm() 호출
     LED (O) - ledR, ledG, ledB - 30 32 34 Pin
         버튼 5 입력 시 - toggleLED() 호출
     Servo (O) - serv - 48 Pin
@@ -24,12 +27,14 @@
 #include <keyword.h>
 volatile bool togLED = false, togUW = false;
 bool flag = false;
-short preBtn[4] = {LOW, LOW, LOW, LOW};
-short curBtn[4] = {LOW, LOW, LOW, LOW};
-int distance;
-void (*fp)() = NULL;
 Servo myServo;
-NewPing sonar(trig, echo, 200);
+NewPing sonar[3] = {
+  NewPing(trig1, echo1, 200),
+  NewPing(trig2, echo2, 200),
+  NewPing(trig3, echo3, 200)
+};
+int distance[3];
+
 void setup(){
   Serial.begin(9600);
   Serial2.begin(9600);
@@ -74,11 +79,14 @@ void loop(){
     delay(300);
   }
   if(togUW){
-    distance = sonar.ping_cm();
-    Serial.print("distance: ");
-    Serial.print(distance);
-    Serial.println("cm");
-    if(distance < 5){
+    int ret=987654321;
+    for(int i=0;i<3;i++){
+      distance[i] = sonar[i].ping_cm();
+      distance[i] = distance[i] == 0 ? ret : distance[i];
+      Serial.println((String)"distance " + (i+1) + (String)" : " + distance[i] + (String)"cm");
+      ret = min(ret, distance[i]);
+    }
+    if(ret < 5){
       vibration(true);
       alarm(true);
     }
