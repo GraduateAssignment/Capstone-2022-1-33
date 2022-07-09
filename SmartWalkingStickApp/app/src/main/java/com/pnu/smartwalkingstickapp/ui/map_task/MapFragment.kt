@@ -1,60 +1,95 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
+import android.os.Build
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.view.children
+import androidx.fragment.app.Fragment
 import com.pnu.smartwalkingstickapp.R
+import com.pnu.smartwalkingstickapp.databinding.FragmentMapBinding
+import com.skt.Tmap.TMapView
+import java.util.*
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class MapFragment : Fragment(), TextToSpeech.OnInitListener {
+    private lateinit var apiKey: String
+    private lateinit var binding: FragmentMapBinding
+    private lateinit var tts: TextToSpeech
+    private var text: String = ""
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        apply {
+            apiKey = getString(R.string.TmapAPIKey)
+        }
+        binding = FragmentMapBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-/**
- * A simple [Fragment] subclass.
- * Use the [MapFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class MapFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
+        initMapView()
+        initButtonClickListenerForTTS()
+    }
+
+    private fun initButtonClickListenerForTTS() {
+        binding.constraintlayoutRoot.children.forEach { view ->
+            view.setOnLongClickListener {
+                if (view == view?.findViewById<Button>(R.id.btn_findPath)) {
+                    Log.d("btn ", "길찾기 버튼")
+                    val btn = view?.findViewById<Button>(R.id.btn_findPath)
+                    text = btn!!.text.toString()
+                }
+                if (view == view?.findViewById<EditText>(R.id.etv_departure)) {
+                    Log.d("btn ", "출발지 입력칸")
+                    val btn = view?.findViewById<EditText>(R.id.etv_departure)
+                    text = btn!!.text.toString()
+                }
+                if (view == view?.findViewById<EditText>(R.id.etv_destination)) {
+                    Log.d("btn ", "도착지 입력칸")
+                    val btn = view?.findViewById<EditText>(R.id.etv_destination)
+                    text = btn!!.text.toString()
+                }
+                if (text != "") {
+                    speakOut()
+                    text = ""
+                }
+                return@setOnLongClickListener true
+            }
+
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_map, container, false)
+
+    private fun initMapView() {
+        val tMapView = TMapView(requireActivity())
+        tMapView.setSKTMapApiKey(apiKey)
+        binding.linearlayoutTMapView.addView(tMapView)
+
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment MapFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            MapFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private fun speakOut() {
+        tts.setPitch(0.6F)
+        tts.setSpeechRate(0.1F)
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "id1")
     }
+    private fun initTextToSppech() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            Toast.makeText(activity, "SDK Version is low", Toast.LENGTH_SHORT).show()
+            return
+        }
+        tts = TextToSpeech(activity)
+    }
+
 }
