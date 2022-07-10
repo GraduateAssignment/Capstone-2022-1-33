@@ -38,9 +38,7 @@ int distance[3];
 void setup(){
   Serial.begin(9600);
   Serial2.begin(9600);
-  Serial.println("HC-06 Setting...");
   servo.attach(48);
-  Serial.println("START");
   pinMode(intr1, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(intr1), toggleSonar, FALLING);
   pinMode(intr2, INPUT_PULLUP);
@@ -57,14 +55,14 @@ void setup(){
   pinMode(vibr, OUTPUT);
   pinMode(buzz, OUTPUT);
   pinMode(serv, OUTPUT);
+  Serial.println("START");
 }
 void loop(){
-  /* check bth input */
-  if(Serial2.available()){
+  if(Serial2.available()){ /* bluetooth communication */
     char ch = Serial2.read();
     callBLE(ch);
   }
-  if(togLED){
+  if(togLED){ /* toggle LED */
     if(flag){
       digitalWrite(ledR,255);
       digitalWrite(ledG,0);
@@ -78,7 +76,7 @@ void loop(){
     flag = !flag;
     delay(300);
   }
-  if(togSonar){
+  if(togSonar){ /* toggle Sonar */
     int ret=987654321;
     for(int i=0;i<3;i++){
       distance[i] = sonar[i].ping_cm();
