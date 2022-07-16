@@ -131,8 +131,9 @@ class CameraXFragment : Fragment() {
                 imageAnalysis.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
                     val image = TensorImage.fromBitmap(imageProxy.toBitmap())
                     val results = detector.detect(image)
-                    Log.v("check", "this")
-                    playTextToSpeech(debugPrint(results).toString())
+                    val people = debugPrint(results).toString()
+                    playTextToSpeech(people)
+                    Toast.makeText(safeContext, people, Toast.LENGTH_SHORT).show()
                     imageProxy.close()
                 })
             }
@@ -147,6 +148,7 @@ class CameraXFragment : Fragment() {
                             .addOnSuccessListener {
                                 for (block in it.textBlocks) {
                                     playTextToSpeech(block.text)
+                                    Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT).show()
                                 }
                             }
                             .addOnFailureListener {
