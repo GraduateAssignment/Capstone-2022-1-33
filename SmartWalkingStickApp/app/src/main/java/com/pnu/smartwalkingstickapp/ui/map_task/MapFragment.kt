@@ -18,7 +18,7 @@ import com.pnu.smartwalkingstickapp.databinding.FragmentMapBinding
 import com.skt.Tmap.TMapView
 import java.util.*
 
-class MapFragment : Fragment(), TextToSpeech.OnInitListener {
+class MapFragment : Fragment(){
     private lateinit var apiKey: String
     private lateinit var binding: FragmentMapBinding
     private lateinit var tts: TextToSpeech
@@ -83,13 +83,6 @@ class MapFragment : Fragment(), TextToSpeech.OnInitListener {
         tts.setPitch(0.6F)
         tts.setSpeechRate(0.1F)
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "id1")
-    }
-    private fun initTextToSppech() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            Toast.makeText(activity, "SDK Version is low", Toast.LENGTH_SHORT).show()
-            return
-        }
-        tts = TextToSpeech(activity)
     }
 
 }

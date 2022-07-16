@@ -23,5 +23,10 @@
         android:id="@+id/nav_camera_x_fragment"
         android:name="com.pnu.smartwalkingstickapp.ui.ocr_task.CameraXFragment"
         android:label="CameraXFragment"
-        tools:layout="@layout/fragment_camera_x"/>
+        tools:layout="@layout/fragment_camera_x">
+        <argument
+            app:argType="string"
+            android:name="feature"
+            android:defaultValue=""/>
+    </fragment>
 </navigation>
