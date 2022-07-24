@@ -1,5 +1,11 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -10,19 +16,29 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
-import androidx.annotation.RequiresApi
+import androidx.camera.core.impl.utils.ContextUtil.getApplicationContext
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.getSystemService
+import androidx.core.os.bundleOf
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentMapBinding
 import com.skt.Tmap.TMapView
 import java.util.*
 
-class MapFragment : Fragment(), TextToSpeech.OnInitListener {
+
+class MapFragment : Fragment() {
     private lateinit var apiKey: String
-    private lateinit var binding: FragmentMapBinding
+    private var binding: FragmentMapBinding? = null
     private lateinit var tts: TextToSpeech
     private var text: String = ""
+    private val MY_PERMISSION_ACCESS_ALL = 100
+    private lateinit var tMapView: TMapView
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -32,36 +48,47 @@ class MapFragment : Fragment(), TextToSpeech.OnInitListener {
             apiKey = getString(R.string.TmapAPIKey)
         }
         binding = FragmentMapBinding.inflate(inflater, container, false)
-        return binding.root
+        return binding?.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        initMapView()
-        initButtonClickListenerForTTS()
+        
+        initButtonLongClickListenerForTTS()
+        initFindingDirectionButton()
     }
 
-    private fun initButtonClickListenerForTTS() {
-        binding.constraintlayoutRoot.children.forEach { view ->
+    private fun initFindingDirectionButton() {
+        binding!!.btnFindPath.setOnClickListener{
+            with(binding!!){
+                val start = etvDeparture.text.toString()
+                val dest = etvDestination.text.toString()
+                val bundle = bundleOf("start" to start, "dest" to dest)
+                findNavController().navigate(R.id.action_nav_map_fragment_to_showDirectionFragment,bundle)
+            }
+        }
+    }
+
+    private fun initButtonLongClickListenerForTTS() {
+        binding!!.constraintlayoutRoot.children.forEach { view ->
             view.setOnLongClickListener {
-                if (view == view?.findViewById<Button>(R.id.btn_findPath)) {
+                if (view == view.findViewById<Button>(R.id.btn_findPath)) {
                     Log.d("btn ", "길찾기 버튼")
-                    val btn = view?.findViewById<Button>(R.id.btn_findPath)
+                    val btn = view.findViewById<Button>(R.id.btn_findPath)
                     text = btn!!.text.toString()
                 }
-                if (view == view?.findViewById<EditText>(R.id.etv_departure)) {
+                if (view == view.findViewById<EditText>(R.id.etv_departure)) {
                     Log.d("btn ", "출발지 입력칸")
-                    val btn = view?.findViewById<EditText>(R.id.etv_departure)
+                    val btn = view.findViewById<EditText>(R.id.etv_departure)
                     text = btn!!.text.toString()
                 }
-                if (view == view?.findViewById<EditText>(R.id.etv_destination)) {
+                if (view == view.findViewById<EditText>(R.id.etv_destination)) {
                     Log.d("btn ", "도착지 입력칸")
-                    val btn = view?.findViewById<EditText>(R.id.etv_destination)
+                    val btn = view.findViewById<EditText>(R.id.etv_destination)
                     text = btn!!.text.toString()
                 }
                 if (text != "") {
-                    speakOut()
+                    // TODO : TTs 기능
                     text = ""
                 }
                 return@setOnLongClickListener true
@@ -69,27 +96,6 @@ class MapFragment : Fragment(), TextToSpeech.OnInitListener {
 
         }
     }
-
-
-    private fun initMapView() {
-        val tMapView = TMapView(requireActivity())
-        tMapView.setSKTMapApiKey(apiKey)
-        binding.linearlayoutTMapView.addView(tMapView)
-
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private fun speakOut() {
-        tts.setPitch(0.6F)
-        tts.setSpeechRate(0.1F)
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "id1")
-    }
-    private fun initTextToSppech() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            Toast.makeText(activity, "SDK Version is low", Toast.LENGTH_SHORT).show()
-            return
-        }
-        tts = TextToSpeech(activity)
-    }
+    
 
 }
