@@ -1,4 +1,4 @@
-package com.pnu.smartwalkingstickapp.ui.map_task
+package com.pnu.smartwalkingstickapp.ui.map_task.response.search
 
 data class Poi(
     //POI 의  id

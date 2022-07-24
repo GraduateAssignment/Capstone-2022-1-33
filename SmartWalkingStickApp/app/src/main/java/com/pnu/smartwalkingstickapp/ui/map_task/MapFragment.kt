@@ -1,12 +1,5 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -15,29 +8,34 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Toast
-import androidx.camera.core.impl.utils.ContextUtil.getApplicationContext
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat.getSystemService
-import androidx.core.content.getSystemService
-import androidx.core.os.bundleOf
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
-import androidx.navigation.findNavController
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentMapBinding
-import com.skt.Tmap.TMapView
-import java.util.*
+import com.pnu.smartwalkingstickapp.ui.map_task.response.search.Poi
+import com.pnu.smartwalkingstickapp.ui.map_task.utility.RetrofitUtil
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 
-class MapFragment : Fragment() {
+class MapFragment : Fragment(), CoroutineScope {
+
+    private val mapViewModel: MapViewModel by activityViewModels()
+
+    private lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
+
     private lateinit var apiKey: String
+    private lateinit var adapter: PoiDataRecyclerViewAdapter
     private var binding: FragmentMapBinding? = null
     private lateinit var tts: TextToSpeech
     private var text: String = ""
-    private val MY_PERMISSION_ACCESS_ALL = 100
-    private lateinit var tMapView: TMapView
+
+    private var state: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,24 +46,23 @@ class MapFragment : Fragment() {
             apiKey = getString(R.string.TmapAPIKey)
         }
         binding = FragmentMapBinding.inflate(inflater, container, false)
-        return binding?.root
+        job = Job()
+
+        return binding!!.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         initButtonLongClickListenerForTTS()
         initFindingDirectionButton()
+        initRcvAdapter()
+        initButton()
     }
 
     private fun initFindingDirectionButton() {
-        binding!!.btnFindPath.setOnClickListener{
-            with(binding!!){
-                val start = etvDeparture.text.toString()
-                val dest = etvDestination.text.toString()
-                val bundle = bundleOf("start" to start, "dest" to dest)
-                findNavController().navigate(R.id.action_nav_map_fragment_to_showDirectionFragment,bundle)
-            }
+        binding!!.btnFindPath.setOnClickListener {
+            findNavController().navigate(R.id.action_nav_map_fragment_to_showDirectionFragment)
         }
     }
 
@@ -96,6 +93,66 @@ class MapFragment : Fragment() {
 
         }
     }
-    
+
+    private fun initButton() {
+        with(binding!!) {
+            btnStartPOI.setOnClickListener {
+                state = "start"
+                getPOIData(etvDeparture.text.toString())
+            }
+            btnDestPOI.setOnClickListener {
+                state = "dest"
+                getPOIData(etvDestination.text.toString())
+            }
+        }
+    }
+
+    private fun initRcvAdapter() {
+        adapter = PoiDataRecyclerViewAdapter().apply {
+            setOnStateInterface(object : OnPoiDataItemClick {
+                override fun sendData(item: Poi) {
+                    when (state) {
+                        "start" -> {
+                            mapViewModel.startPoi = item
+                            binding!!.etvDeparture.setText(item.name)
+                        }
+                        "dest" -> {
+                            mapViewModel.destPoi = item
+                            binding!!.etvDestination.setText(item.name)
+                        }
+
+                    }
+                }
+            })
+        }
+        with(binding!!) {
+            rcvPoiData.layoutManager = LinearLayoutManager(activity)
+            rcvPoiData.adapter = adapter
+        }
+    }
+
+    private fun getPOIData(keyword: String) {
+        launch(coroutineContext) {
+            try {
+                withContext(Dispatchers.IO) {
+                    val response = RetrofitUtil.apiService.getSearchLocation(
+                        keyword = keyword
+                    )
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        withContext(Dispatchers.Main) {
+                            setPoiData(body!!.searchPoiInfo.pois.poi)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    private fun setPoiData(poiList: List<Poi>) {
+        adapter.setData(poiList.toMutableList())
+    }
+
 
 }

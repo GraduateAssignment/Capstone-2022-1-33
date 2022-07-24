@@ -7,140 +7,117 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentShowDirectionBinding
+import com.pnu.smartwalkingstickapp.ui.map_task.response.path.Feature
+import com.pnu.smartwalkingstickapp.ui.map_task.response.path.FeatureCollection
+import com.pnu.smartwalkingstickapp.ui.map_task.response.search.Poi
+import com.pnu.smartwalkingstickapp.ui.map_task.utility.RetrofitUtil
 import com.skt.Tmap.TMapData
 import com.skt.Tmap.TMapPoint
 import com.skt.Tmap.TMapView
 import com.skt.Tmap.poi_item.TMapPOIItem
+import kotlinx.coroutines.*
+import java.lang.Exception
+import kotlin.coroutines.CoroutineContext
 
 
-class ShowDirectionFragment : Fragment() {
-    companion object {
-        const val SEARCH_RESULT_EXTRA_KEY = "SearchResult"
-        const val PERMISSION_REQUEST_CODE = 1
-        const val CAMERA_ZOOM_LEVEL = 17f
-    }
+class ShowDirectionFragment : Fragment() , CoroutineScope, TextToSpeech.OnInitListener {
 
-    private var binding: FragmentShowDirectionBinding? = null
-    private lateinit var locationManager: LocationManager
-    private lateinit var myLocationListener: MyLocationListener
-    private lateinit var tMapView : TMapView
-    private lateinit var start : String
-    private lateinit var destination : String
+    private val mapViewModel : MapViewModel by activityViewModels()
+    private var binding : FragmentShowDirectionBinding? = null
+    private  lateinit var job : Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     val TAG = "jiwoo"
+    private lateinit var adapter: PathDataRecyclerViewAdapter
+
+    private var tts : TextToSpeech? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for requireContext fragment
-
+        job = Job()
         binding = FragmentShowDirectionBinding.inflate(inflater, container, false)
-        return binding?.root
+        return binding!!.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        arguments?.apply {
-            start = arguments?.getString("start").toString()
-            destination = arguments?.getString("dest").toString()
-        }
-        initSetCurLocationToMapButton()
-        getStartAndDestination()
-        //Log.d(TAG, "onViewCreated: ${arguments?.getString("start")} ${arguments?.getString("dest")}")
+        initRcvAdapter()
+        getPathInformation()
     }
 
-    private fun getStartAndDestination() {
-        getPOIPathData(start,destination)
-    }
-
-    private fun getPOIPathData(start: String, destination: String) {
-        val tMapData = TMapData()
-        val arrTMapPoint: ArrayList<TMapPoint> = ArrayList()
-        val arrTitle: ArrayList<String> = ArrayList()
-        val arrAddress: ArrayList<String> = ArrayList()
-    }
-
-
-    private fun initSetCurLocationToMapButton() {
-        binding!!.btnSetCurLocationToMap.setOnClickListener{
-            getMyLocation()
-        }
-    }
-
-    private fun getMyLocation() {
-        if (::locationManager.isInitialized.not()) {
-            locationManager = activity?.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        }
-        val isGpsEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        if (isGpsEnable) {
-            if (ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    requireActivity(),
-                    arrayOf(
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ),
-                    PERMISSION_REQUEST_CODE
-                )
-            } else {
-                setMyLocationListener()
+    private fun getPathInformation() {
+        with(mapViewModel){
+            launch(coroutineContext) {
+                try{
+                    withContext(Dispatchers.IO){
+                        val response = RetrofitUtil.apiService.getPath(
+                            startX = startPoi!!.frontLon, startY = startPoi!!.frontLat, startName = startPoi!!.name!!,
+                            endX = destPoi!!.frontLon, endY = destPoi!!.frontLat, endName = destPoi!!.name!!
+                        )
+                        if(response.isSuccessful){
+                            val body = response.body()
+                            withContext(Dispatchers.Main){
+                                Log.d(TAG, "${body!!.features}")
+                                setData(body!!.features)
+                            }
+                        }
+                    }
+                }
+                catch (e : Exception){
+                }
             }
         }
     }
+    private fun initRcvAdapter(){
+        adapter = PathDataRecyclerViewAdapter()
+        with(binding!!){
+            rcvPathData.layoutManager = LinearLayoutManager(activity)
+            rcvPathData.adapter = adapter
+        }
 
-    @SuppressLint("MissingPermission")
-    private fun setMyLocationListener() {
-        val minTime: Long = 1500
-        val minDistance = 100f
-        if (::myLocationListener.isInitialized.not()) {
-            myLocationListener = MyLocationListener()
-        }
-        with(locationManager) {
-            requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                minTime, minDistance, myLocationListener
-            )
-            requestLocationUpdates(
-                LocationManager.NETWORK_PROVIDER,
-                minTime, minDistance, myLocationListener
-            )
-        }
     }
 
-    inner class MyLocationListener : LocationListener {
-        override fun onLocationChanged(location: Location) {
-            val curLocation = Pair(
-                location.latitude,
-                location.longitude
-            )
-            onCurrentLocationChanged(curLocation)
+    private fun setData(featureList: List<Feature>) {
+        Log.d(TAG, "setData: ${featureList.size}", )
+        adapter.setData(featureList)
+    }
+
+    private fun initTextToSpeech(){
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
+            Toast.makeText(activity, "SDK version is low", Toast.LENGTH_SHORT).show()
+            return
         }
+        tts = TextToSpeech(requireContext(),this)
+
+
     }
-    private fun onCurrentLocationChanged(curLocation: Pair<Double,Double>) {
-        Log.d("curLocation ", curLocation.first.toString() + "," + curLocation.second.toString())
-        tMapView.setCenterPoint(curLocation.first, curLocation.second )
-    }
+
+
     override fun onDestroy() {
         binding = null
         super.onDestroy()
+    }
+
+    override fun onInit(p0: Int) {
+        TODO("Not yet implemented")
     }
 }
