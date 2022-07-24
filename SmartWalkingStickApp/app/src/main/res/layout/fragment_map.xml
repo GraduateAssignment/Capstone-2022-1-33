@@ -7,17 +7,6 @@
     android:id="@+id/constraintlayout_root"
     tools:context=".ui.map_task.MapFragment">
 
-    <LinearLayout
-        android:id="@+id/linearlayout_tMapView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="20dp"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_findPath" />
-
     <Button
         android:id="@+id/btn_findPath"
         android:layout_width="0dp"

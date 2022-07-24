@@ -1,16 +1,17 @@
 package com.pnu.smartwalkingstickapp.ui.ocr_task
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.pm.PackageManager
 import android.icu.text.SimpleDateFormat
 import android.net.Uri
 import android.os.Bundle
+import androidx.fragment.app.Fragment
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.util.Size
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -85,7 +86,7 @@ class CameraXFragment : Fragment() {
         }
     }
     private fun requestPermission() {
-        ActivityCompat.requestPermissions(activity!!, arrayOf(android.Manifest.permission.CAMERA), 99)
+        ActivityCompat.requestPermissions(requireActivity(), arrayOf(android.Manifest.permission.CAMERA), 99)
     }
 
     private fun startCamera() {
