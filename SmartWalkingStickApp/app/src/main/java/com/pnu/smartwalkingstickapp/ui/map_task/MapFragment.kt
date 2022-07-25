@@ -1,5 +1,6 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import androidx.annotation.RequiresApi
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -22,7 +24,6 @@ import kotlin.coroutines.CoroutineContext
 
 
 class MapFragment : Fragment(), CoroutineScope {
-
     private val mapViewModel: MapViewModel by activityViewModels()
 
     private lateinit var job: Job
@@ -53,7 +54,6 @@ class MapFragment : Fragment(), CoroutineScope {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         initButtonLongClickListenerForTTS()
         initFindingDirectionButton()
         initRcvAdapter()
@@ -131,6 +131,17 @@ class MapFragment : Fragment(), CoroutineScope {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private fun speakOut() {
+        tts.setPitch(0.6F)
+        tts.setSpeechRate(0.1F)
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "id1")
+    }
+
+    private fun setPoiData(poiList: List<Poi>) {
+        adapter.setData(poiList.toMutableList())
+    }
+
     private fun getPOIData(keyword: String) {
         launch(coroutineContext) {
             try {
@@ -148,11 +159,7 @@ class MapFragment : Fragment(), CoroutineScope {
             } catch (e: Exception) {
             }
         }
+
+
     }
-
-    private fun setPoiData(poiList: List<Poi>) {
-        adapter.setData(poiList.toMutableList())
-    }
-
-
 }

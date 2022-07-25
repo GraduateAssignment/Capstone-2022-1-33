@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
 import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
@@ -16,6 +17,8 @@ import com.pnu.smartwalkingstickapp.databinding.FragmentOcrBinding
 class OcrFragment : Fragment() {
     private lateinit var binding: FragmentOcrBinding
     private lateinit var _cameraButton: Button
+    private lateinit var _detectButton: Button
+
     private lateinit var _context: Context
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +31,7 @@ class OcrFragment : Fragment() {
     ): View? {
         binding = FragmentOcrBinding.inflate(inflater, container, false)
         _cameraButton = binding.cameraButton
+        _detectButton = binding.detectButton
         return binding.root
     }
 
@@ -44,7 +48,12 @@ class OcrFragment : Fragment() {
 
     private fun initSetOnClickListener(){
         _cameraButton.setOnClickListener {
-            findNavController().navigate(R.id.action_nav_ocr_fragment_to_nav_camera_x_fragment)
+            val bundle = bundleOf("feature" to "text")
+            findNavController().navigate(R.id.action_nav_ocr_fragment_to_nav_camera_x_fragment, bundle)
+        }
+        _detectButton.setOnClickListener {
+            val bundle = bundleOf("feature" to "detect")
+            findNavController().navigate(R.id.action_nav_ocr_fragment_to_nav_camera_x_fragment, bundle)
         }
     }
 

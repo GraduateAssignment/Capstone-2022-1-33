@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
@@ -32,6 +33,11 @@
         android:id="@+id/showDirectionFragment"
         android:name="com.pnu.smartwalkingstickapp.ui.map_task.ShowDirectionFragment"
         android:label="fragment_show_direction"
-        tools:layout="@layout/fragment_show_direction"/>
+        tools:layout="@layout/fragment_show_direction">
 
+        <argument
+            app:argType="string"
+            android:name="feature"
+            android:defaultValue=""/>
+    </fragment>
 </navigation>
