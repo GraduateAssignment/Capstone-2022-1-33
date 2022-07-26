@@ -47,7 +47,8 @@ void toggleLED(){
 /* vibration module */
 void vibration(bool flag){
 	if(flag){
-		analogWrite(vibr, 64);
+		analogWrite(vibr, 128);
+		Serial.println("vibra on");
 	}
 	else{
 		analogWrite(vibr,0);

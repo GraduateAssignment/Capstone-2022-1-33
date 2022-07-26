@@ -1,7 +1,7 @@
 /*
     [입력]
     Bluetooth (O) 
-        Serial2 - 16(Tx2) 17(Rx2) Pin
+        Serial2 - 16(Tx2) 17(Rx2) Pin (Tx & Rx 크로스 연결)
           스마트폰에서 입력값 받아서 함수 호출
     버튼 1~5 (O) - 인터럽트
         버튼 1 - intr1 - 3 Pin - 거리 감지 온/오프 버튼 - toggleUW() 호출
@@ -34,7 +34,7 @@ NewPing sonar[3] = {
   NewPing(trig3, echo3, 200)
 };
 int distance[3];
-
+int test=0;
 void setup(){
   Serial.begin(9600);
   Serial2.begin(9600);
@@ -65,8 +65,8 @@ void loop(){
   if(togLED){ /* toggle LED */
     if(flag){
       digitalWrite(ledR,255);
-      digitalWrite(ledG,0);
       digitalWrite(ledB,0);
+      digitalWrite(ledG,0);
     }
     else{
       digitalWrite(ledR,0);
@@ -78,13 +78,19 @@ void loop(){
   }
   if(togSonar){ /* toggle Sonar */
     int ret=987654321;
+    /* testing */
+    test = sonar[0].ping_cm();
+    test = test == 0 ? ret : test;
+    ret = min(ret,test);
+    Serial.println((String)"distance " + 3 + (String)" : " + test + (String)"cm");
+    /*
     for(int i=0;i<3;i++){
       distance[i] = sonar[i].ping_cm();
       distance[i] = distance[i] == 0 ? ret : distance[i];
       Serial.println((String)"distance " + (i+1) + (String)" : " + distance[i] + (String)"cm");
       ret = min(ret, distance[i]);
-    }
-    if(ret < 5){
+    }*/
+    if(ret < 30){
       vibration(true);
       alarm(true);
     }
