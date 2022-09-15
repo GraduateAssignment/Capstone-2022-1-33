@@ -83,6 +83,7 @@ void loop(){
     test = test == 0 ? ret : test;
     ret = min(ret,test);
     Serial.println((String)"distance " + 3 + (String)" : " + test + (String)"cm");
+    Serial2.println((String)"distance " + 3 + (String)" : " + test + (String)"cm");
     /*
     for(int i=0;i<3;i++){
       distance[i] = sonar[i].ping_cm();
