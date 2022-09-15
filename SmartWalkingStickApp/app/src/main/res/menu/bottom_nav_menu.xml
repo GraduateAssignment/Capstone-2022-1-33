@@ -8,4 +8,9 @@
         android:id="@+id/nav_ocr_fragment"
         android:title="READ"
         android:icon="@drawable/ic_launcher_foreground"/>
+
+    <item
+        android:id="@+id/nav_bluetooth_fragment"
+        android:title="BlueTooth"
+        android:icon="@drawable/ic_launcher_foreground"/>
 </menu>
