@@ -3,34 +3,37 @@
 
 /* intr1 */
 void toggleSonar(){
-	delayMicroseconds(2000); /* Chattering */
+	delayMicroseconds(3000); /* Chattering */
 	if(digitalRead(intr1)!=LOW) return;
 	extern bool togSonar;
 	togSonar = !togSonar;
 }
 /* intr2 */
 void takePicture(){
-	delayMicroseconds(2000);
+	delayMicroseconds(3000);
 	if(digitalRead(intr2)!=LOW) return;
 	digitalWrite(ledR,255);
 	digitalWrite(ledG,0);
 	digitalWrite(ledB,0);
+	Serial2.println(1);
 }
 /* intr3 */
 void takeOCR(){
-	delayMicroseconds(2000);
+	delayMicroseconds(3000);
 	if(digitalRead(intr3)!=LOW) return;
 	digitalWrite(ledR,255);
 	digitalWrite(ledG,228);
 	digitalWrite(ledB,0);
+	Serial2.println(2);
 }
 /* intr4 */
 void findWay(){
-	delayMicroseconds(2000);
+	delayMicroseconds(3000);
 	if(digitalRead(intr4)!=LOW) return;
 	digitalWrite(ledR,0);
 	digitalWrite(ledG,255);
 	digitalWrite(ledB,0);
+	Serial2.println(3);
 }
 /* intr5 */
 void toggleLED(){
