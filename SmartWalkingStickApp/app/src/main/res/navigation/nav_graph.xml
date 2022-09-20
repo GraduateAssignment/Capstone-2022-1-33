@@ -40,4 +40,10 @@
             android:name="feature"
             android:defaultValue=""/>
     </fragment>
+
+    <fragment
+        android:id="@+id/nav_bluetooth_fragment"
+        android:name="com.pnu.smartwalkingstickapp.ui.bluetooth.BluetoothFragment"
+        android:label="fragment_bluetooth"
+        tools:layout="@layout/fragment_bluetooth" />
 </navigation>

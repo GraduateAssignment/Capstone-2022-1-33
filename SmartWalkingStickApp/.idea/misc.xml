@@ -3,22 +3,16 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-<<<<<<< HEAD
+        <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/activity_bluetooth.xml" value="0.19791666666666666" />
+        <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/fragment_blank.xml" value="0.24094202898550723" />
+        <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/fragment_bluetooth.xml" value="0.24094202898550723" />
         <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/fragment_map.xml" value="0.264" />
-        <entry key="..\:/Users/sjw98/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/activity_main.xml" value="0.13166144200626959" />
-        <entry key="..\:/Users/sjw98/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/fragment_map.xml" value="0.13166144200626959" />
-        <entry key="..\:/Users/sjw98/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/fragment_show_direction.xml" value="0.29528985507246375" />
-        <entry key="..\:/Users/sjw98/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/menu_rcv_path_data.xml" value="0.29528985507246375" />
-        <entry key="..\:/Users/sjw98/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/menu_rcv_poi_data.xml" value="0.29528985507246375" />
-=======
-        <entry key="../../../../../layout/custom_preview.xml" value="0.1" />
->>>>>>> f55c8a8cb25a1e47942decef2a860b3dd84b163e
+        <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/recyclerview_item.xml" value="0.24094202898550723" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
-        <entry key="app/src/main/res/layout/fragment_camera.xml" value="0.22010869565217392" />
         <entry key="app/src/main/res/layout/fragment_camera_x.xml" value="0.14336372847011145" />
         <entry key="app/src/main/res/layout/fragment_main.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_map.xml" value="0.1" />
-        <entry key="app/src/main/res/layout/fragment_ocr.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/fragment_ocr.xml" value="0.19610507246376813" />
         <entry key="app/src/main/res/layout/fragment_read_text.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_readtext.xml" value="0.1390625" />
         <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.1" />
