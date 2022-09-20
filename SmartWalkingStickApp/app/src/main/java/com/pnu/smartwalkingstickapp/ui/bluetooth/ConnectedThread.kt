@@ -1,33 +1,41 @@
 package com.pnu.smartwalkingstickapp.ui.bluetooth
 
 import android.bluetooth.BluetoothSocket
+import android.os.Handler
+import android.os.SystemClock
 import android.util.Log
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
 
-class ConnectedThread(private val mmSocket: BluetoothSocket) : Thread() {
+class ConnectedThread(private val mmSocket: BluetoothSocket, private val mHandler: Handler) : Thread() {
     private val TAG = "jiwoo"
     private val mmInStream: InputStream = mmSocket.inputStream
     private val mmOutStream: OutputStream = mmSocket.outputStream
     private val mmBuffer: ByteArray = ByteArray(1024) // mmBuffer store for the stream
 
     override fun run() {
-        var numBytes: Int // bytes returned from read()
-        Log.d(TAG, "run: ")
-        // Keep listening to the InputStream until an exception occurs.
+        val buffer = ByteArray(1024) // buffer store for the stream
+        var bytes: Int // bytes returned from read()
+
+        // Keep listening to the InputStream until an exception occurs
+        // Keep listening to the InputStream until an exception occurs
         while (true) {
-            // Read from the InputStream.
-            numBytes = try {
-                val value = mmInStream.read(mmBuffer)
-                Log.d(TAG, "run: $value ")
-                value
+            try {
+                // Read from the InputStream
+                bytes = mmInStream.available()
+                if (bytes != 0) {
+                    SystemClock.sleep(100) //pause and wait for rest of data. Adjust this depending on your sending speed.
+                    bytes = mmInStream.available() // how many bytes are ready to be read?
+                    bytes = mmInStream.read(buffer, 0, bytes) // record how many bytes we actually read
+                    Log.d("juyong: ", Integer.toString(bytes))
+                    mHandler.obtainMessage(2, bytes, -1, buffer).sendToTarget() // Send the obtained bytes to the UI activity
+                }
             } catch (e: IOException) {
-                Log.d(TAG, "Input stream was disconnected", e)
+                e.printStackTrace()
                 break
             }
-
         }
     }
 

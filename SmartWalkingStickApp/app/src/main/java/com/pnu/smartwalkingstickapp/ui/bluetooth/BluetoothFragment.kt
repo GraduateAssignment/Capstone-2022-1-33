@@ -15,6 +15,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Message
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -26,9 +27,12 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
 import java.io.IOException
+import java.io.UnsupportedEncodingException
 import java.lang.reflect.Method
+import java.net.Socket
 import java.util.*
 
 
@@ -41,6 +45,10 @@ class BluetoothFragment : Fragment() {
         Manifest.permission.ACCESS_FINE_LOCATION
     )
 
+    private val MESSAGE_READ = 2 // used in bluetooth handler to identify message update
+    private val CONNECTING_STATUS = 3 // used in bluetooth handler to identify message status
+
+
     var BT_MODULE_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
     // BLE Gatt 추가하기
@@ -50,7 +58,7 @@ class BluetoothFragment : Fragment() {
     private var scanning: Boolean = false
     private var devicesArr = ArrayList<BluetoothDevice>()
     private val SCAN_PERIOD = 1000
-    private val handler = Handler()
+    private var handler = Handler()
     private lateinit var viewManager: RecyclerView.LayoutManager
     private lateinit var recyclerViewAdapter : RecyclerViewAdapter
     private val mLeScanCallback = @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -196,27 +204,61 @@ class BluetoothFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        handler = object : Handler() {
+            override fun handleMessage(msg: Message) {
+                if (msg.what == MESSAGE_READ) {
+                    var readMessage: String? = null
+                    try {
+                        readMessage = String((msg.obj as ByteArray)!!, Charsets.UTF_8)
+                    } catch (e: UnsupportedEncodingException) {
+                        e.printStackTrace()
+                    }
+                    if (readMessage != null) {
+                        Log.v("juyong: ", readMessage)
+                    }
+                }
+                if (msg.what == CONNECTING_STATUS) {
+                }
+            }
+        }
         recyclerViewAdapter = RecyclerViewAdapter(devicesArr)
         recyclerViewAdapter.mListener = object : RecyclerViewAdapter.OnItemClickListener{
             @SuppressLint("MissingPermission")
             override fun onClick(view: View, position: Int) {
                 scanDevice(false) // scan 중지
-                val device = devicesArr.get(position)
-                bleGatt =  DeviceControlActivity(requireActivity(), bleGatt).connectGatt(device)
 
-                val mSocket = createBluetoothSocket(device)
-                try {
-
-                    mSocket!!.connect()
-                }
-                catch ( e: IOException) {
-                    Log.d("jiwoo", "catch: ")
-                }
-
-
-                ConnectedThread(mSocket!!).start()
-
-
+                // Spawn a new thread to avoid blocking the GUI one
+                object : Thread() {
+                    override fun run() {
+                        var fail = false
+                        val device: BluetoothDevice = devicesArr[position]
+                        var mSocket: BluetoothSocket? = null
+                        try {
+                            mSocket = createBluetoothSocket(device)
+                        } catch (e: IOException) {
+                            fail = true
+                            Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show()
+                        }
+                        // Establish the Bluetooth socket connection.
+                        try {
+                            mSocket?.connect()
+                        } catch (e: IOException) {
+                            try {
+                                fail = true
+                                mSocket?.close()
+                                handler.obtainMessage(CONNECTING_STATUS, -1, -1).sendToTarget()
+                            } catch (e2: IOException) {
+                                //insert code to deal with this
+                                Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        if (!fail) {
+                            ConnectedThread(mSocket!!, handler).start()
+                            handler.obtainMessage(CONNECTING_STATUS, 1, -1, name).sendToTarget()
+                        }
+                    }
+                }.start()
             }
         }
 
@@ -251,24 +293,11 @@ class BluetoothFragment : Fragment() {
             }
             scanDevice(true)
         }
-
-
-
-
     }
 
-    @SuppressLint("MissingPermission")
     @Throws(IOException::class)
     private fun createBluetoothSocket(device: BluetoothDevice): BluetoothSocket? {
-        try {
-            val m: Method = device.javaClass.getMethod(
-                "createInsecureRfcommSocketToServiceRecord",
-                UUID::class.java
-            )
-            return m.invoke(device, BT_MODULE_UUID) as BluetoothSocket?
-        } catch (e: Exception) {
-            Log.e("JIWOO", "Could not create Insecure RFComm Connection", e)
-        }
         return device.createRfcommSocketToServiceRecord(BT_MODULE_UUID)
+        //creates secure outgoing connection with BT device using UUID
     }
 }
