@@ -49,6 +49,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         get() = Dispatchers.Main + job
 
     val TAG = "jiwoo"
+
+    private var isNavigating : Boolean = false
     private lateinit var adapter: PathDataRecyclerViewAdapter
 
     private var tts: TextToSpeech? = null
@@ -104,14 +106,13 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
     private fun initNavigateButton() {
         binding!!.btnStartNavigate.setOnClickListener {
-            if (adapter.dataSet.isNotEmpty()) {
-                if (checkLocationPermission()) {
-                    initMapView()
-                    setMapPolyLine(adapter.dataSet)
-                    startLocationUpdate()
-                }
-            } else {
-                Log.d(TAG, "initNavigateButton: empty")
+            if(!isNavigating) {
+                startNavigating()
+                binding!!.btnStartNavigate.text = "길안내 종료"
+            }
+            else{
+                endNavigating()
+                binding!!.btnStartNavigate.text = "길안내 시작"
             }
         }
     }
@@ -144,7 +145,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         Log.d(TAG, "onRequestPermissionsResult()")
         if (requestCode == REQUEST_PERMISSION_LOCATION) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startLocationUpdate()
+                startNavigating()
             } else {
                 Log.d(TAG, "onRequestPermissionsResult() _ 권한 허용 거부")
             }
@@ -168,6 +169,14 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                             val body = response.body()
                             withContext(Dispatchers.Main) {
                                 setData(body!!.features)
+                                if (adapter.dataSet.isNotEmpty()) {
+                                    if (checkLocationPermission()) {
+                                        initMapView()
+                                        setMapPolyLine(adapter.dataSet)
+                                    }else{}
+                                } else {
+                                    Log.d(TAG, "initNavigateButton: empty")
+                                }
                             }
                         }
                     }
@@ -183,9 +192,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         val line = TMapPolyLine()
         features.forEach { feature ->
             val coordinate = getCoordinate(feature)!!
-            if(feature.properties.pointType == "GP") {
-                line.addLinePoint(TMapPoint(coordinate.first, coordinate.second))
-            }
+            line.addLinePoint(TMapPoint(coordinate.first, coordinate.second))
         }
         line.id = "line1"
         line.lineColor = Color.BLUE
@@ -194,6 +201,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     private fun initRcvAdapter() {
+        binding!!.rcvPathData.isNestedScrollingEnabled = false
         adapter = PathDataRecyclerViewAdapter()
         with(binding!!) {
             rcvPathData.layoutManager = LinearLayoutManager(activity)
@@ -209,7 +217,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     @SuppressLint("MissingPermission")
-    private fun startLocationUpdate() {
+    private fun startNavigating() {
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -219,10 +227,10 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.d(TAG, "startLocationUpdates() 두 위치 권한중 하나라도 없는 경우 ")
+            Log.d(TAG, "startNavigatings() 두 위치 권한중 하나라도 없는 경우 ")
             return
         }
-
+        isNavigating = true
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val mLocationRequest = LocationRequest.create().apply {
             interval = 3000 // 업데이트 간격 단위(밀리초)
@@ -322,10 +330,18 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         TODO("Not yet implemented")
     }
 
+    private fun endNavigating() {
+        if(isNavigating){
+            fusedLocationClient.removeLocationUpdates(mLocationCallback)
+            isNavigating = false
+        }
+    }
+
+
     override fun onStop() {
         super.onStop()
         // 위치 업데이터를 제거 하는 메서드
         // 지정된 위치 결과 리스너에 대한 모든 위치 업데이트를 제거
-        fusedLocationClient.removeLocationUpdates(mLocationCallback)
+        endNavigating()
     }
 }

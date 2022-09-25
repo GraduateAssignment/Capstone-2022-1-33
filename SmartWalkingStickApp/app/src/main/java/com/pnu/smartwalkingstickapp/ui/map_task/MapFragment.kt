@@ -52,12 +52,29 @@ class MapFragment : Fragment(), CoroutineScope {
         return binding!!.root
     }
 
+    val TAG = "ABCDE"
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Log.d(TAG, "Map onViewCreated: ")
         initButtonLongClickListenerForTTS()
         initFindingDirectionButton()
         initRcvAdapter()
         initButton()
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        Log.d(TAG, "MAP onDetach: ")
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        Log.d(TAG, "MAP onDestroyView: ")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "MAP onDestroy: ")
     }
 
     private fun initFindingDirectionButton() {

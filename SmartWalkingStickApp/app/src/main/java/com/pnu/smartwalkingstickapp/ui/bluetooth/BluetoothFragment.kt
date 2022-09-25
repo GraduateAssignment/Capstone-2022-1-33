@@ -321,7 +321,7 @@ class BluetoothFragment : Fragment() {
 
         val bundle = bundleOf("feature" to tag)
         when (topFragment) {
-            is MapFragment -> findNavController().navigate(R.id.action_nav_map_fragment_to_nav_camera_x_fragment, bundle)
+            //is MapFragment -> findNavController().navigate(R.id.action_nav_map_fragment_to_nav_camera_x_fragment, bundle)
             is OcrFragment -> findNavController().navigate(R.id.action_nav_ocr_fragment_to_nav_camera_x_fragment, bundle)
             is BluetoothFragment -> findNavController().navigate(R.id.action_nav_bluetooth_fragment_to_nav_camera_x_fragment, bundle)
             is ShowDirectionFragment -> findNavController().navigate(R.id.action_showDirectionFragment_to_nav_camera_x_fragment, bundle)
@@ -336,7 +336,7 @@ class BluetoothFragment : Fragment() {
         var intent = Intent(Intent.ACTION_CALL)
         print(highScore)
         intent.data = Uri.parse("tel:$highScore")
-        if(intent.resolveActivity(activity!!.packageManager) != null){
+        if(intent.resolveActivity(requireActivity().packageManager) != null){
             startActivity(intent)
         }
     }

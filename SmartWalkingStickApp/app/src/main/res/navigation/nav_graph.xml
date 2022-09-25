@@ -19,9 +19,6 @@
         <action
             android:id="@+id/action_nav_map_fragment_to_showDirectionFragment"
             app:destination="@id/showDirectionFragment" />
-        <action
-            android:id="@+id/action_nav_map_fragment_to_nav_camera_x_fragment"
-            app:destination="@id/nav_camera_x_fragment" />
     </fragment>
     <fragment
         android:id="@+id/nav_ocr_fragment"
@@ -52,6 +49,12 @@
         <action
             android:id="@+id/action_showDirectionFragment_to_nav_camera_x_fragment"
             app:destination="@id/nav_camera_x_fragment" />
+        <action
+            android:id="@+id/action_showDirectionFragment_to_nav_bluetooth_fragment"
+            app:destination="@id/nav_bluetooth_fragment" />
+        <action
+            android:id="@+id/action_showDirectionFragment_to_nav_map_fragment"
+            app:destination="@id/nav_map_fragment" />
     </fragment>
 
     <fragment
