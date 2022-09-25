@@ -15,7 +15,7 @@
         <entry key="app/src/main/res/drawable/ic_settings.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/settings-48px.xml" value="0.1" />
         <entry key="app/src/main/res/font/notosan_font_family.xml" value="0.17897435897435898" />
-        <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.15975341796875" />
         <entry key="app/src/main/res/layout/fragment_basic_dialog.xml" value="0.2869791666666667" />
         <entry key="app/src/main/res/layout/fragment_blank.xml" value="0.1515625" />
         <entry key="app/src/main/res/layout/fragment_bluetooth.xml" value="0.13229166666666667" />
@@ -26,7 +26,6 @@
         <entry key="app/src/main/res/layout/fragment_read_text.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_readtext.xml" value="0.1390625" />
         <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.1" />
-        <entry key="app/src/main/res/menu/main_app_bar.xml" value="0.2515625" />
       </map>
     </option>
   </component>
