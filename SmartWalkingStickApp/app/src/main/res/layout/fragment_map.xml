@@ -2,67 +2,52 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintlayout_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/constraintlayout_root"
+    android:background="#F8F8F5"
     tools:context=".ui.map_task.MapFragment">
 
     <Button
         android:id="@+id/btn_findPath"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="길찾기"
         android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/frame_green_border"
+        android:text="길찾기"
+        android:textColor="@color/white"
+        android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/etv_destination"
         tools:layout_editor_absoluteX="256dp"
         tools:layout_editor_absoluteY="152dp" />
 
-    <TextView
-        android:id="@+id/tv_departure"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:text="출발지"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/etv_departure"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/etv_departure" />
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_startPOI"
-        android:layout_width="50dp"
-        android:layout_marginRight="10dp"
-        android:layout_height="50dp"
-        android:background="@drawable/ic_search"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/etv_departure"
-        app:layout_constraintBottom_toBottomOf="@id/etv_departure"/>
 
     <EditText
         android:id="@+id/etv_departure"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginRight="20dp"
-        android:hint="출발지 입력하는 칸"
+        android:layout_marginHorizontal="20dp"
+        android:background="@drawable/frame_border"
+        android:layout_marginTop="24dp"
+        android:hint="출발지"
+        android:padding="8dp"
         app:layout_constraintEnd_toStartOf="@id/btn_startPOI"
-        app:layout_constraintStart_toEndOf="@+id/tv_departure"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/tv_destination"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:text="도착지"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/etv_destination"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/etv_destination" />
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_startPOI"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:textColor="@color/white"
+        android:layout_marginRight="10dp"
+        android:background="@drawable/ic_search"
+        app:layout_constraintBottom_toBottomOf="@id/etv_departure"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/etv_departure" />
 
 
     <EditText
@@ -72,9 +57,11 @@
         android:layout_marginLeft="20dp"
         android:layout_marginTop="20dp"
         android:layout_marginRight="20dp"
-        android:hint="도착지 입력하는 칸"
+        android:hint="도착지"
+        android:padding="8dp"
+        android:background="@drawable/frame_border"
         app:layout_constraintEnd_toStartOf="@id/btn_destPOI"
-        app:layout_constraintStart_toEndOf="@id/tv_destination"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/etv_departure" />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -82,21 +69,21 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="10dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_findPath"
+        android:background="#F8F8F5"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_findPath" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_destPOI"
         android:layout_width="50dp"
-        android:layout_marginRight="10dp"
         android:layout_height="50dp"
+        android:layout_marginRight="10dp"
         android:background="@drawable/ic_search"
+        app:layout_constraintBottom_toBottomOf="@id/etv_destination"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/etv_destination"
-        app:layout_constraintBottom_toBottomOf="@id/etv_destination"/>
-
+        app:layout_constraintTop_toTopOf="@id/etv_destination" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

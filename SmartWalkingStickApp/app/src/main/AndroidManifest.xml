@@ -25,6 +25,7 @@
         android:label="BLUETOOTH" />
     <permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
@@ -37,9 +38,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartWalkingStickApp"
         tools:targetApi="31">
-        <activity
-            android:name=".BluetoothActivity"
-            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

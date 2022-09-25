@@ -1,7 +1,6 @@
 package com.pnu.smartwalkingstickapp.ui.map_task.response.path
 
-data class Feature(
+data class Geometry(
     val type : String,
-    val properties : Property,
-    val geometry : Geometry
+    val coordinates : Any,
 )

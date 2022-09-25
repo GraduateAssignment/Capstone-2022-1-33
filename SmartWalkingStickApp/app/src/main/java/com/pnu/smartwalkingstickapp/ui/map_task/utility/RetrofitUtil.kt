@@ -15,7 +15,7 @@ object RetrofitUtil {
     private fun getRetrofit(): Retrofit {
 
         return Retrofit.Builder()
-            .baseUrl(Url.TMAP_URL)
+            .baseUrl(TMAP_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .client(buildOkHttpClient())
             .build()
