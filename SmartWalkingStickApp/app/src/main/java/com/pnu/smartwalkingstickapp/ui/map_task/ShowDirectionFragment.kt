@@ -17,8 +17,10 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.location.*
+import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentShowDirectionBinding
 import com.pnu.smartwalkingstickapp.ui.map_task.response.path.Feature
 import com.pnu.smartwalkingstickapp.ui.map_task.utility.Key
@@ -343,5 +345,9 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         // 위치 업데이터를 제거 하는 메서드
         // 지정된 위치 결과 리스너에 대한 모든 위치 업데이트를 제거
         endNavigating()
+    }
+
+    fun actionToCameraXFragment(bundle: Bundle){
+        findNavController().navigate(R.id.action_showDirectionFragment_to_nav_camera_x_fragment, bundle)
     }
 }

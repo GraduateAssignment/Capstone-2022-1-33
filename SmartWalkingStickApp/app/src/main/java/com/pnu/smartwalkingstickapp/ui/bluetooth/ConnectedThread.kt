@@ -9,7 +9,8 @@ import java.io.InputStream
 import java.io.OutputStream
 
 
-class ConnectedThread(private val mmSocket: BluetoothSocket, private val mHandler: Handler) : Thread() {
+class ConnectedThread(private val mmSocket: BluetoothSocket, private val mHandler: Handler) :
+    Thread() {
     private val TAG = "jiwoo"
     private val mmInStream: InputStream = mmSocket.inputStream
     private val mmOutStream: OutputStream = mmSocket.outputStream
@@ -28,9 +29,10 @@ class ConnectedThread(private val mmSocket: BluetoothSocket, private val mHandle
                 if (bytes != 0) {
                     SystemClock.sleep(100) //pause and wait for rest of data. Adjust this depending on your sending speed.
                     bytes = mmInStream.available() // how many bytes are ready to be read?
-                    bytes = mmInStream.read(buffer, 0, bytes) // record how many bytes we actually read
-                    Log.d("juyong: ", Integer.toString(bytes))
-                    mHandler.obtainMessage(2, bytes, -1, buffer).sendToTarget() // Send the obtained bytes to the UI activity
+                    bytes =
+                        mmInStream.read(buffer, 0, bytes) // record how many bytes we actually read
+                    mHandler.obtainMessage(2, bytes, -1, buffer)
+                        .sendToTarget() // Send the obtained bytes to the UI activity
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
