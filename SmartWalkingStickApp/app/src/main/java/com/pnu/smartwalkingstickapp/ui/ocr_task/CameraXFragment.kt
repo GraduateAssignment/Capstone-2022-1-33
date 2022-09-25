@@ -1,8 +1,7 @@
 package com.pnu.smartwalkingstickapp.ui.ocr_task
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.ContentValues.TAG
+import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
@@ -10,7 +9,6 @@ import android.icu.text.SimpleDateFormat
 import android.net.Uri
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.util.Size
 import android.view.LayoutInflater
@@ -23,18 +21,18 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentCameraXBinding
+import com.pnu.smartwalkingstickapp.utils.TTS
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.task.vision.detector.Detection
 import org.tensorflow.lite.task.vision.detector.ObjectDetector
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.nio.ByteBuffer
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class CameraXFragment : Fragment() {
     private lateinit var binding: FragmentCameraXBinding
@@ -49,11 +47,11 @@ class CameraXFragment : Fragment() {
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    private lateinit var textToSpeech: TextToSpeech
+    private lateinit var textToSpeech: TTS
 
     private lateinit var detector: ObjectDetector
 
-    private lateinit var whereFrom: String
+    private lateinit var TAG: String
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -73,27 +71,20 @@ class CameraXFragment : Fragment() {
         _viewFinder = binding.viewFinder
         outputDirectory = getOutputDirectory()
 
-        textToSpeech = TextToSpeech(safeContext, TextToSpeech.OnInitListener {
-            if (it == TextToSpeech.SUCCESS) {
-                // TODO: 한글 패치
-                val result = textToSpeech.setLanguage(Locale.ENGLISH)
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Log.e("TTS","해당언어는 지원되지 않습니다.")
-                    return@OnInitListener
-                }
-            }
-        })
-        whereFrom = arguments?.getString("feature").toString()
+        textToSpeech = context?.let { TTS(it) }!!
+        TAG = arguments?.getString("feature").toString()
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         when(val cameraPermission = ContextCompat.checkSelfPermission(safeContext, Manifest.permission.CAMERA)){
             PackageManager.PERMISSION_GRANTED ->  startCamera()
             else -> requestPermission()
         }
-        if(whereFrom == "detect") {
+
+        if(TAG == "detect") {
             val options = ObjectDetector.ObjectDetectorOptions.builder()
                 .setMaxResults(5)
                 .setScoreThreshold(0.5f)
@@ -112,7 +103,7 @@ class CameraXFragment : Fragment() {
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(safeContext)
         val cameraExecutor = ContextCompat.getMainExecutor(safeContext)
-
+        var lastAnalyzedTimestamp = 0L
         cameraProviderFuture.addListener(Runnable {
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
@@ -128,12 +119,12 @@ class CameraXFragment : Fragment() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            if (whereFrom == "detect"){
+            if (TAG == "detect"){
                 imageAnalysis.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
                     val image = TensorImage.fromBitmap(imageProxy.toBitmap())
                     val results = detector.detect(image)
                     val people = debugPrint(results).toString()
-                    playTextToSpeech(people)
+                    textToSpeech.play(people)
                     Toast.makeText(safeContext, people, Toast.LENGTH_SHORT).show()
                     imageProxy.close()
                 })
@@ -141,23 +132,26 @@ class CameraXFragment : Fragment() {
             else {
                 imageAnalysis.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
                     val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-                    // insert your code here.
                     val mediaImage = imageProxy.image
                     if (mediaImage != null) {
-                        val image = InputImage.fromMediaImage(mediaImage, rotationDegrees)
-                        val result = recognizer.process(image)
-                            .addOnSuccessListener {
-                                for (block in it.textBlocks) {
-                                    playTextToSpeech(block.text)
-                                    Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT).show()
+                            val image = InputImage.fromMediaImage(mediaImage, rotationDegrees)
+                            val result = recognizer.process(image)
+                                .addOnSuccessListener {
+                                    val currentTimestamp = System.currentTimeMillis()
+                                    if (currentTimestamp - lastAnalyzedTimestamp >= TimeUnit.SECONDS.toMillis(5)) {
+                                        for (block in it.textBlocks) {
+                                            textToSpeech.play(block.text)
+                                            Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT).show()
+                                        }
+                                        lastAnalyzedTimestamp = currentTimestamp
+                                    }
                                 }
-                            }
-                            .addOnFailureListener {
-                                Log.d("Fail", "!!")
-                            }
-                            .addOnCompleteListener {
-                                imageProxy.close()
-                            }
+                                .addOnFailureListener {
+                                    Log.d("Fail", "!!")
+                                }
+                                .addOnCompleteListener {
+                                    imageProxy.close()
+                                }
                     }
                 })
             }
@@ -168,7 +162,7 @@ class CameraXFragment : Fragment() {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalysis)
             } catch(exception: Exception) {
-                Log.e(TAG, "Use case binding failed", exception)
+                Log.e(ContentValues.TAG, "Use case binding failed", exception)
             }
         }, ContextCompat.getMainExecutor(safeContext))
     }
@@ -185,28 +179,24 @@ class CameraXFragment : Fragment() {
         // been taken
         imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(safeContext), object : ImageCapture.OnImageSavedCallback {
             override fun onError(exc: ImageCaptureException) {
-                Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                Log.e(ContentValues.TAG, "Photo capture failed: ${exc.message}", exc)
             }
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 val savedUri = Uri.fromFile(photoFile)
                 val msg = "Photo capture succeeded: $savedUri"
                 Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
-                Log.d(TAG, msg)
+                Log.d(ContentValues.TAG, msg)
             }
         })
     }
+
 
     private fun getOutputDirectory(): File {
         val mediaDir = activity?.externalMediaDirs?.firstOrNull()?.let {
             File(it, resources.getString(R.string.app_name)).apply { mkdirs() }
         }
         return if (mediaDir != null && mediaDir.exists()) mediaDir else activity?.filesDir!!
-    }
-
-    private fun playTextToSpeech(text: String){
-        Log.d("Speech:", text)
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun ImageProxy.toBitmap(): Bitmap {
@@ -242,19 +232,6 @@ class CameraXFragment : Fragment() {
             }
         }
         return peopleNum
-//        Log.v("Check:", results.size.toString())
-//        for ((i, obj) in results.withIndex()) {
-//            val box = obj.boundingBox
-//
-//            Log.v(TAG, "Detected object: ${i} ")
-//            Log.v(TAG, "  boundingBox: (${box.left}, ${box.top}) - (${box.right},${box.bottom})")
-//
-//            for ((j, category) in obj.categories.withIndex()) {
-//                Log.v(TAG, "    Label $j: ${category.label}")
-//                val confidence: Int = category.score.times(100).toInt()
-//                Log.v(TAG, "    Confidence: ${confidence}%")
-//            }
-//        }
     }
     companion object {
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"

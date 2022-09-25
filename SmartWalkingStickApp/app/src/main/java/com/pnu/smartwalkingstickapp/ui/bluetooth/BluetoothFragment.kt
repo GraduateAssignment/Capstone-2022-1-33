@@ -11,7 +11,9 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -23,21 +25,26 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
+import com.pnu.smartwalkingstickapp.ui.map_task.MapFragment
+import com.pnu.smartwalkingstickapp.ui.map_task.ShowDirectionFragment
+import com.pnu.smartwalkingstickapp.ui.ocr_task.OcrFragment
+import com.pnu.smartwalkingstickapp.utils.WrappedDialogBasicTwoButton
 import java.io.IOException
 import java.io.UnsupportedEncodingException
-import java.lang.reflect.Method
-import java.net.Socket
 import java.util.*
 
 
 class BluetoothFragment : Fragment() {
 
+    private lateinit var sharedPref: SharedPreferences
     //private var binding: FragmentBluetoothBinding? = null
     private val REQUEST_ENABLE_BT=1
     private val REQUEST_ALL_PERMISSION= 2
@@ -202,23 +209,25 @@ class BluetoothFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_bluetooth, container, false)
     }
 
+    @SuppressLint("HandlerLeak")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        sharedPref = activity?.getPreferences(Context.MODE_PRIVATE)!!
         handler = object : Handler() {
             override fun handleMessage(msg: Message) {
                 if (msg.what == MESSAGE_READ) {
-                    var readMessage: String? = null
                     try {
-                        readMessage = String((msg.obj as ByteArray)!!, Charsets.UTF_8)
+                        val readMessage = String((msg.obj as ByteArray), Charsets.UTF_8)
+                        when (readMessage[0]) {
+                            '1' -> runEmergencyCall()
+                            '2' -> runTask("detect")
+                            '3' -> runTask("text")
+                            else -> {
+                            }
+                        }
                     } catch (e: UnsupportedEncodingException) {
                         e.printStackTrace()
                     }
-                    if (readMessage != null) {
-                        Log.v("juyong: ", readMessage)
-                    }
-                }
-                if (msg.what == CONNECTING_STATUS) {
                 }
             }
         }
@@ -264,6 +273,8 @@ class BluetoothFragment : Fragment() {
 
         val bleOnOffBtn: ToggleButton = view.findViewById(R.id.ble_on_off_btn)
         val scanBtn: Button = view.findViewById(R.id.scanBtn)
+        val savePhoneNumBtn: Button = view.findViewById(R.id.savePhoneNumBtn)
+
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         viewManager = LinearLayoutManager(requireContext())
 
@@ -293,11 +304,62 @@ class BluetoothFragment : Fragment() {
             }
             scanDevice(true)
         }
+
+        savePhoneNumBtn.setOnClickListener {
+            showDialog()
+        }
     }
 
     @Throws(IOException::class)
     private fun createBluetoothSocket(device: BluetoothDevice): BluetoothSocket? {
         return device.createRfcommSocketToServiceRecord(BT_MODULE_UUID)
         //creates secure outgoing connection with BT device using UUID
+    }
+
+    private fun runTask(tag: String) {
+        var topFragment: Fragment? = (activity as MainActivity).getForegroundFragment()
+
+        val bundle = bundleOf("feature" to tag)
+        when (topFragment) {
+            is MapFragment -> findNavController().navigate(R.id.action_nav_map_fragment_to_nav_camera_x_fragment, bundle)
+            is OcrFragment -> findNavController().navigate(R.id.action_nav_ocr_fragment_to_nav_camera_x_fragment, bundle)
+            is BluetoothFragment -> findNavController().navigate(R.id.action_nav_bluetooth_fragment_to_nav_camera_x_fragment, bundle)
+            is ShowDirectionFragment -> findNavController().navigate(R.id.action_showDirectionFragment_to_nav_camera_x_fragment, bundle)
+            else -> null
+        }
+    }
+
+    private fun runEmergencyCall() {
+        val sharedPref = activity?.getPreferences(Context.MODE_PRIVATE) ?: return
+        val defaultValue = ""
+        val highScore = sharedPref.getString("number", defaultValue)
+        var intent = Intent(Intent.ACTION_CALL)
+        print(highScore)
+        intent.data = Uri.parse("tel:$highScore")
+        if(intent.resolveActivity(activity!!.packageManager) != null){
+            startActivity(intent)
+        }
+    }
+
+    private fun showDialog() {
+        val registerPhoneNumDialog = context?.let { it -> WrappedDialogBasicTwoButton(it).apply {
+            clickListener = object : WrappedDialogBasicTwoButton.DialogButtonClickListener{
+                override fun dialogCloseClickListener() {
+                    dismiss()
+                }
+                override fun dialogCustomClickListener() {
+                    with(sharedPref.edit()) {
+                        putString("number", binding.dialogContent.text.toString())
+                        apply()
+                        Toast.makeText(context, "번호가 저장되었습니다.", Toast.LENGTH_SHORT).show()
+                        dismiss()
+                        runEmergencyCall()
+                    }
+
+                }
+
+            }
+        } }
+        registerPhoneNumDialog?.show()
     }
 }
