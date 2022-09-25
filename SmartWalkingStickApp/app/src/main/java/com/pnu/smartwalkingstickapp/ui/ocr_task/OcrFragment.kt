@@ -49,4 +49,8 @@ class OcrFragment : Fragment() {
         }
     }
 
+    fun actionToCameraXFragment(bundle: Bundle){
+        findNavController().navigate(R.id.action_nav_ocr_fragment_to_nav_camera_x_fragment, bundle)
+    }
+
 }

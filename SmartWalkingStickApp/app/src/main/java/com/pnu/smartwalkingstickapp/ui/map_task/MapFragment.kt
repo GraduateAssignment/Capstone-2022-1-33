@@ -162,4 +162,8 @@ class MapFragment : Fragment(), CoroutineScope {
 
 
     }
+
+    fun actionToCameraXFragment(bundle: Bundle) {
+        findNavController().navigate(R.id.action_nav_map_fragment_to_nav_camera_x_fragment, bundle)
+    }
 }
