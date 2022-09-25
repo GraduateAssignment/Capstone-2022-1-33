@@ -26,12 +26,13 @@
 */
 #include <keyword.h>
 volatile bool togLED = false, togSonar = false;
+volatile bool sDir[3] = {false, false, false};
 bool flag = false;
 Servo servo;
 NewPing sonar[3] = {
-  NewPing(trig1, echo1, 200),
-  NewPing(trig2, echo2, 200),
-  NewPing(trig3, echo3, 200)
+  NewPing(trig1, echo1, MAX_DISTANCE),
+  NewPing(trig2, echo2, MAX_DISTANCE),
+  NewPing(trig3, echo3, MAX_DISTANCE)
 };
 int distance[3];
 int test=0;
@@ -77,20 +78,18 @@ void loop(){
     delay(300);
   }
   if(togSonar){ /* toggle Sonar */
-    int ret=987654321;
-    /* testing */
-    test = sonar[0].ping_cm();
-    test = test == 0 ? ret : test;
-    ret = min(ret,test);
-    Serial.println((String)"distance " + 3 + (String)" : " + test + (String)"cm");
-    Serial2.println((String)"distance " + 3 + (String)" : " + test + (String)"cm");
-    /*
+    int ret = MAX_DISTANCE;
+    sDir[0] = sDir[1] = sDir[2] = false;
     for(int i=0;i<3;i++){
       distance[i] = sonar[i].ping_cm();
       distance[i] = distance[i] == 0 ? ret : distance[i];
-      Serial.println((String)"distance " + (i+1) + (String)" : " + distance[i] + (String)"cm");
+      if(distance[i] > 0 and distance[i] < 30){
+        sDir[i] = true;
+      }
+      //Serial.println((String)"distance " + (i+1) + (String)" : " + distance[i] + (String)"cm");
+      //Serial2.println((String)"distance " + (i+1) + (String)" : " + distance[i] + (String)"cm");
       ret = min(ret, distance[i]);
-    }*/
+    }
     if(ret < 30){
       vibration(true);
       alarm(true);
@@ -99,6 +98,7 @@ void loop(){
       vibration(false);
       alarm(false);
     }
+    switchServo(servo);
   }
   delay(300);
 }

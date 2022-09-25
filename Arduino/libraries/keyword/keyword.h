@@ -6,7 +6,7 @@
 #include <NewPing.h>
 
 #define vibr 4
-#define intr1 3
+#define intr1 3 
 #define intr2 18
 #define intr3 19
 #define intr4 20
@@ -22,6 +22,7 @@
 #define echo3 45
 #define buzz 46
 #define serv 48
+#define MAX_DISTANCE 200
 
 void toggleSonar();
 void takePicture();
@@ -31,6 +32,7 @@ void toggleLED();
 void vibration(bool);
 void alarm(bool);
 void turnServo(Servo, int);
+void switchServo(Servo);
 void callBLE(char);
 
 #endif

@@ -7,6 +7,7 @@ void toggleSonar(){
 	if(digitalRead(intr1)!=LOW) return;
 	extern bool togSonar;
 	togSonar = !togSonar;
+	Serial.println(5);
 }
 /* intr2 */
 void takePicture(){
@@ -46,6 +47,7 @@ void toggleLED(){
 		digitalWrite(ledB, 0);
 	}
 	togLED = !togLED;
+	Serial2.println(4);
 }
 /* vibration module */
 void vibration(bool flag){
@@ -66,14 +68,47 @@ void alarm(bool flag){
 		digitalWrite(buzz, LOW);
 	}
 }
-/* Servo */
+/* Servo
+	dir == 0   : ?
+	dir == 90  : ?
+	dir == 180 : ?
+ */
 void turnServo(Servo servo, int dir){
 	dir *= 90;
 	servo.write(dir);
 }
+void switchServo(Servo servo){
+	extern bool sDir[3];
+	// 0 : left
+	// 1 : mid
+	// 2 : right
+	if(!sDir[0] and !sDir[1] and !sDir[2]){ 	// 000
+		turnServo(servo, 1);
+	}
+	else if(!sDir[0] and !sDir[1] and sDir[2]){ // 001
+		turnServo(servo, 0);
+	}
+	else if(!sDir[0] and sDir[1] and !sDir[2]){ // 010
+		turnServo(servo, 2);
+	}
+	else if(!sDir[0]){ 							// 011
+		turnServo(servo, 0);
+	}
+	else if(!sDir[1] and !sDir[2]){				// 100
+		turnServo(servo, 2);
+	}
+	else if(!sDir[1]){ 							// 101
+		turnServo(servo, 1);
+	}
+	else if(!sDir[2]){ 							// 110
+		turnServo(servo, 2);
+	}
+	else{ 										// 111
+		turnServo(servo, 1);
+	}
+}
 /* Bluetooth */
 void callBLE(char ch){
-	extern Servo servo;
 	if(ch == 'a'){
       takePicture();
     }
@@ -87,15 +122,6 @@ void callBLE(char ch){
       toggleLED();
     }
 	else if(ch == 'e'){
-		turnServo(servo, 2);
-	}
-	else if(ch == 'f'){
-		turnServo(servo, 0);
-	}
-	else if(ch == 'g'){
-		turnServo(servo, 1);
-	}
-	else if(ch == 'h'){
 		toggleSonar();
 	}
 }
