@@ -27,8 +27,8 @@
 #include <keyword.h>
 volatile bool togLED = false, togSonar = false;
 volatile bool sDir[3] = {false, false, false};
+volatile Servo servo;
 bool flag = false;
-Servo servo;
 NewPing sonar[3] = {
   NewPing(trig1, echo1, MAX_DISTANCE),
   NewPing(trig2, echo2, MAX_DISTANCE),
@@ -92,13 +92,13 @@ void loop(){
     }
     if(ret < 30){
       vibration(true);
-      alarm(true);
+      //alarm(true);
     }
     else{
       vibration(false);
-      alarm(false);
+      //alarm(false);
     }
-    switchServo(servo);
+    switchServo();
   }
   delay(300);
 }

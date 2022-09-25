@@ -31,8 +31,8 @@ void findWay();
 void toggleLED();
 void vibration(bool);
 void alarm(bool);
-void turnServo(Servo, int);
-void switchServo(Servo);
+void turnServo(int);
+void switchServo();
 void callBLE(char);
 
 #endif
