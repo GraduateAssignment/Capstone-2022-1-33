@@ -158,6 +158,7 @@ class BluetoothFragment : Fragment() {
             }
         }
     }
+
     class RecyclerViewAdapter(private val myDataset: ArrayList<BluetoothDevice>) :
         RecyclerView.Adapter<RecyclerViewAdapter.MyViewHolder>() {
 

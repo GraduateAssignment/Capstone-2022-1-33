@@ -1,12 +1,17 @@
 package com.pnu.smartwalkingstickapp.utils
 
 import android.content.Context
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import java.util.*
 
 class TTS (context: Context) {
     private lateinit var textToSpeech: TextToSpeech
+    val ttsState = MutableLiveData<Int>(0)
+    val params = Bundle()
 
     init {
         textToSpeech = TextToSpeech(context, TextToSpeech.OnInitListener {
@@ -19,12 +24,30 @@ class TTS (context: Context) {
                 }
             }
         })
+        textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(p0: String?) {
+                Log.d("TAG", "onStart: ")
+                ttsState.postValue(1)
+            }
+
+            override fun onDone(p0: String?) {
+                Log.d("TAG", "33onStart: ")
+                ttsState.postValue(0)
+            }
+
+            override fun onError(p0: String?) {
+                Log.d("TAG", "onStart:2 ")
+                ttsState.postValue(-1)
+            }
+        })
     }
 
     fun play(msg: String) {
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "1");
         if (!textToSpeech.isSpeaking) {
-            textToSpeech.speak(msg, TextToSpeech.QUEUE_FLUSH, null, null)
-            textToSpeech?.playSilentUtterance(750, TextToSpeech.QUEUE_ADD,null)
+            ttsState.value = 1
+            textToSpeech.speak(msg, TextToSpeech.QUEUE_FLUSH, params, "1")
+            textToSpeech?.playSilentUtterance(750, TextToSpeech.QUEUE_ADD,TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID)
         }
     }
 }

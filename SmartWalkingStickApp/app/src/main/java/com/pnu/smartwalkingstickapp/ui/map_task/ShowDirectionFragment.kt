@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
@@ -17,6 +16,7 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.location.*
@@ -30,20 +30,24 @@ import com.skt.Tmap.TMapPoint
 import com.skt.Tmap.TMapPolyLine
 import com.skt.Tmap.TMapView
 import kotlinx.coroutines.*
-import java.lang.Math.*
+import java.lang.Math.toRadians
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.pow
 
 
-class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitListener{
+class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitListener {
 
     private val REQUEST_PERMISSION_LOCATION = 101
+
+
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var tMapView : TMapView
-    private lateinit var tMapGps : TMapGpsManager
+    private lateinit var tMapView: TMapView
+    private lateinit var tMapGps: TMapGpsManager
     private var navigatePosition = 0
 
     private val mapViewModel: MapViewModel by activityViewModels()
+    private val showDirectionViewModel: ShowDirectionViewModel by viewModels()
+
     private var binding: FragmentShowDirectionBinding? = null
 
     private lateinit var job: Job
@@ -52,7 +56,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
     val TAG = "jiwoo"
 
-    private var isNavigating : Boolean = false
+    private var isNavigating: Boolean = false
     private lateinit var adapter: PathDataRecyclerViewAdapter
 
     private var tts: TextToSpeech? = null
@@ -73,6 +77,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         initRcvAdapter()
         getPathInformation()
         initNavigateButton()
+        showDirectionViewModel.print()
     }
 
     private fun initMapView() {
@@ -88,7 +93,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
         // Request For GPS permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1);
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_PERMISSION_LOCATION);
         }
 
         // GPS using T Map
@@ -99,8 +104,14 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         tMapGps.minDistance = 10F
         tMapGps.provider = "network";
 
-        tMapView.setCenterPoint(mapViewModel.startPoi!!.frontLon.toDouble(),mapViewModel.startPoi!!.frontLat.toDouble())
-        tMapView.setLocationPoint(mapViewModel.startPoi!!.frontLon.toDouble(),mapViewModel.startPoi!!.frontLat.toDouble())
+        tMapView.setCenterPoint(
+            mapViewModel.startPoi!!.frontLon.toDouble(),
+            mapViewModel.startPoi!!.frontLat.toDouble()
+        )
+        tMapView.setLocationPoint(
+            mapViewModel.startPoi!!.frontLon.toDouble(),
+            mapViewModel.startPoi!!.frontLat.toDouble()
+        )
 
         tMapGps.OpenGps();
         Log.d(TAG, "initMapView: ${tMapGps.location.longitude} ${tMapGps.location.latitude}")
@@ -108,11 +119,10 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
     private fun initNavigateButton() {
         binding!!.btnStartNavigate.setOnClickListener {
-            if(!isNavigating) {
+            if (!isNavigating) {
                 startNavigating()
                 binding!!.btnStartNavigate.text = "길안내 종료"
-            }
-            else{
+            } else {
                 endNavigating()
                 binding!!.btnStartNavigate.text = "길안내 시작"
             }
@@ -129,7 +139,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                 Log.d(TAG, "checkPermissionForLocation() 권한 상태 : X")
                 ActivityCompat.requestPermissions(
                     requireActivity(),
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     REQUEST_PERMISSION_LOCATION
                 )
                 false
@@ -144,13 +154,18 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        Log.d(TAG, "onRequestPermissionsResult()")
+        Log.d(TAG, "onRequestPermissionsResult: requestCode : $requestCode")
         if (requestCode == REQUEST_PERMISSION_LOCATION) {
+            Log.d(TAG, "onRequestPermissionsResult()")
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startNavigating()
+                Log.d(TAG, "onRequestPermissionsResult()2")
+                initMapView()
+                setMapPolyLine(adapter.dataSet)
             } else {
                 Log.d(TAG, "onRequestPermissionsResult() _ 권한 허용 거부")
             }
+        } else {
+            Log.d(TAG, "onRequestPermissionsResult() _ 권한 허용 거부123")
         }
     }
 
@@ -175,7 +190,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                                     if (checkLocationPermission()) {
                                         initMapView()
                                         setMapPolyLine(adapter.dataSet)
-                                    }else{}
+                                    } else {
+                                    }
                                 } else {
                                     Log.d(TAG, "initNavigateButton: empty")
                                 }
@@ -215,6 +231,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     private fun setData(featureList: List<Feature>) {
         Log.d(TAG, "setData: ${featureList.size}")
         adapter.setData(featureList)
+        Log.d(TAG, "setData: $featureList")
         //adapter.setData(featureList.filter { it.properties.pointType == "GP" })
     }
 
@@ -283,13 +300,19 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
             val destFeature = adapter.dataSet[navigatePosition] // 현재 가려고 하는 경유지
             val destPos = getCoordinate(destFeature) // 현재 가려고 하는 경유지의 좌표
             val distance = getDistance(Pair(newCurLon, newCurLat), destPos!!)
-            if(distance < 2) {
-                Log.e(TAG, "approach ${destFeature.properties.description} ", )
-                Toast.makeText(requireContext(), "${adapter.dataSet[navigatePosition]} $distance", Toast.LENGTH_SHORT).show()
+            if (distance < 2) {
+                Log.e(TAG, "approach ${destFeature.properties.description} ")
+                Toast.makeText(
+                    requireContext(),
+                    "${adapter.dataSet[navigatePosition]} $distance",
+                    Toast.LENGTH_SHORT
+                ).show()
                 navigatePosition++
-            }
-            else {
-                Log.d(TAG, "destFeature : ${destFeature.properties.description}  distance : $distance")
+            } else {
+                Log.d(
+                    TAG,
+                    "destFeature : ${destFeature.properties.description}  distance : $distance"
+                )
             }
         } else {
             navigatePosition = 0
@@ -303,7 +326,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         val dLat = toRadians(end.second - start.second)
         val dLon = toRadians(end.first - start.first)
         val a =
-            kotlin.math.sin(dLat / 2).pow(2.0) + kotlin.math.sin(dLon / 2).pow(2.0) * kotlin.math.cos(
+            kotlin.math.sin(dLat / 2).pow(2.0) + kotlin.math.sin(dLon / 2)
+                .pow(2.0) * kotlin.math.cos(
                 toRadians(start.second)
             ) * kotlin.math.cos(
                 toRadians(end.second)
@@ -333,7 +357,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     private fun endNavigating() {
-        if(isNavigating){
+        if (isNavigating) {
             fusedLocationClient.removeLocationUpdates(mLocationCallback)
             isNavigating = false
         }
@@ -347,7 +371,10 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         endNavigating()
     }
 
-    fun actionToCameraXFragment(bundle: Bundle){
-        findNavController().navigate(R.id.action_showDirectionFragment_to_nav_camera_x_fragment, bundle)
+    fun actionToCameraXFragment(bundle: Bundle) {
+        findNavController().navigate(
+            R.id.action_showDirectionFragment_to_nav_camera_x_fragment,
+            bundle
+        )
     }
 }

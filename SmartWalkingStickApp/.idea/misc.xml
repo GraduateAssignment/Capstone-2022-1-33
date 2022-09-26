@@ -25,6 +25,13 @@
         <entry key="app/src/main/res/layout/fragment_ocr.xml" value="0.19610507246376813" />
         <entry key="app/src/main/res/layout/fragment_read_text.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_readtext.xml" value="0.1390625" />
+<<<<<<< Updated upstream
+=======
+        <entry key="app/src/main/res/layout/fragment_show_direction.xml" value="0.12234042553191489" />
+        <entry key="app/src/main/res/layout/menu_rcv_path_data.xml" value="0.16458333333333333" />
+        <entry key="app/src/main/res/layout/menu_rcv_poi_data.xml" value="0.19610507246376813" />
+        <entry key="app/src/main/res/layout/recyclerview_item.xml" value="0.19610507246376813" />
+>>>>>>> Stashed changes
         <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.1" />
       </map>
     </option>
