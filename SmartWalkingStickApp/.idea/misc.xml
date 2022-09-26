@@ -9,6 +9,8 @@
         <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/fragment_map.xml" value="0.264" />
         <entry key="..\:/Users/jihyun/SmartWalkingStick/SmartWalkingStickApp/app/src/main/res/layout/recyclerview_item.xml" value="0.24094202898550723" />
         <entry key="app/src/main/res/drawable/frame_border.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/frame_border_white.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/ic_map.xml" value="0.13" />
         <entry key="app/src/main/res/drawable/ic_map_48px.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/ic_photo_camera.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/ic_search.xml" value="0.1" />
@@ -25,7 +27,9 @@
         <entry key="app/src/main/res/layout/fragment_ocr.xml" value="0.19610507246376813" />
         <entry key="app/src/main/res/layout/fragment_read_text.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_readtext.xml" value="0.1390625" />
+        <entry key="app/src/main/res/layout/recyclerview_item.xml" value="0.1515625" />
         <entry key="app/src/main/res/menu/bottom_nav_menu.xml" value="0.1" />
+        <entry key="app/src/main/res/menu/main_app_bar.xml" value="0.19270833333333334" />
       </map>
     </option>
   </component>
