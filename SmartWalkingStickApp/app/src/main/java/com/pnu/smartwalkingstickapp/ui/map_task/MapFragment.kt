@@ -1,5 +1,6 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
+import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -11,6 +12,7 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.annotation.RequiresApi
 import androidx.core.view.children
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -19,13 +21,14 @@ import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentMapBinding
 import com.pnu.smartwalkingstickapp.ui.map_task.response.search.Poi
 import com.pnu.smartwalkingstickapp.ui.map_task.utility.RetrofitUtil
+import com.pnu.smartwalkingstickapp.utils.TTS
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
 
 class MapFragment : Fragment(), CoroutineScope {
     private val mapViewModel: MapViewModel by activityViewModels()
-
+    private lateinit var ttsSpeaker : TTS
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
@@ -56,30 +59,38 @@ class MapFragment : Fragment(), CoroutineScope {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Log.d(TAG, "Map onViewCreated: ")
+        ttsSpeaker = TTS(requireContext())
         initButtonLongClickListenerForTTS()
         initFindingDirectionButton()
         initRcvAdapter()
         initButton()
+        initSwapBtn()
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        Log.d(TAG, "MAP onDetach: ")
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        Log.d(TAG, "MAP onDestroyView: ")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "MAP onDestroy: ")
+    private fun initSwapBtn() {
+        binding!!.btnSwapStartDest.setOnClickListener {
+            mapViewModel.swapPoint()
+            val temp = binding!!.etvDeparture.text.toString()
+            binding!!.etvDeparture.setText(binding!!.etvDestination.text.toString())
+            binding!!.etvDestination.setText(temp)
+        }
     }
 
     private fun initFindingDirectionButton() {
         binding!!.btnFindPath.setOnClickListener {
-            findNavController().navigate(R.id.action_nav_map_fragment_to_showDirectionFragment)
+            with(mapViewModel) {
+                if(startPoi != null && destPoi != null) {
+                    val text = startPoi!!.name + " 그리고 " + destPoi!!.name +"로 길찾기를 시작합니다."
+
+                    ttsSpeaker.play(text.toString())
+                    ttsSpeaker.ttsState.observe(viewLifecycleOwner) {
+                        Log.d(TAG, "initFindingDirectionButton: $it ")
+                        if(it == 0) {
+                            findNavController().navigate(R.id.action_nav_map_fragment_to_showDirectionFragment)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -132,10 +143,12 @@ class MapFragment : Fragment(), CoroutineScope {
                         "start" -> {
                             mapViewModel.startPoi = item
                             binding!!.etvDeparture.setText(item.name)
+                            binding!!.etvDeparture.setSelection(item.name!!.length)
                         }
                         "dest" -> {
                             mapViewModel.destPoi = item
                             binding!!.etvDestination.setText(item.name)
+                            binding!!.etvDestination.setSelection(item.name!!.length)
                         }
 
                     }
@@ -176,8 +189,6 @@ class MapFragment : Fragment(), CoroutineScope {
             } catch (e: Exception) {
             }
         }
-
-
     }
 
     fun actionToCameraXFragment(bundle: Bundle) {

@@ -46,9 +46,7 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container) as NavHostFragment
 
-        //appBarConfiguration = AppBarConfiguration(navController.graph)
         navController = navHostFragment.navController
-        //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
         binding.bottomNav.setupWithNavController(navController)
 
         navController.addOnDestinationChangedListener { controller, destination, arguments ->
