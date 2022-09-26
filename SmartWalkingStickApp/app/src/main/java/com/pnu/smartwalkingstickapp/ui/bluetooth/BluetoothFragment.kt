@@ -41,11 +41,15 @@ class BluetoothFragment : Fragment() {
     private lateinit var sharedPref: SharedPreferences
     private lateinit var recyclerView: RecyclerView
     private lateinit var emergencyCallNum: TextView
+    private lateinit var connectedThread: ConnectedThread
+    private var flag = false
     //private var binding: FragmentBluetoothBinding? = null
     private val REQUEST_ENABLE_BT = 1
     private val REQUEST_ALL_PERMISSION = 2
     private val PERMISSIONS = arrayOf(
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.BLUETOOTH_SCAN
     )
 
     private val MESSAGE_READ = 2 // used in bluetooth handler to identify message update
@@ -294,7 +298,9 @@ class BluetoothFragment : Fragment() {
                             }
                         }
                         if (!fail) {
-                            ConnectedThread(mSocket!!, handler).start()
+                            connectedThread = ConnectedThread(mSocket!!, handler)
+                            connectedThread.start()
+                            flag = true
                             handler.obtainMessage(CONNECTING_STATUS, 1, -1, name).sendToTarget()
                         }
                     }
@@ -303,6 +309,8 @@ class BluetoothFragment : Fragment() {
         }
         val bleOnOffBtn: Switch = view.findViewById(R.id.ble_on_off_btn)
         val emergencyCallCell: ConstraintLayout = view.findViewById(R.id.emergency_call_cell)
+        val findCaneCell: ConstraintLayout = view.findViewById(R.id.find_cane_cell)
+
         emergencyCallNum = view.findViewById(R.id.emergency_call_number)
         initEmergencyCallView()
 
@@ -319,6 +327,13 @@ class BluetoothFragment : Fragment() {
 
         emergencyCallCell.setOnClickListener {
             showDialog()
+        }
+
+        findCaneCell.setOnClickListener {
+            if (flag){
+                val writeMessage = "f".toByteArray()
+                connectedThread.write(writeMessage)
+            }
         }
     }
     private fun initEmergencyCallView() {
