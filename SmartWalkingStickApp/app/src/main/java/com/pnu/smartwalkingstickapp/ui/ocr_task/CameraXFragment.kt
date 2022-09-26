@@ -51,7 +51,7 @@ class CameraXFragment : Fragment() {
 
     private lateinit var detector: ObjectDetector
 
-    private lateinit var TAG: String
+    private lateinit var feature: String
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -72,7 +72,7 @@ class CameraXFragment : Fragment() {
         outputDirectory = getOutputDirectory()
 
         textToSpeech = context?.let { TTS(it) }!!
-        TAG = arguments?.getString("feature").toString()
+        feature = arguments?.getString("feature").toString()
         return binding.root
     }
 
@@ -84,10 +84,10 @@ class CameraXFragment : Fragment() {
             else -> requestPermission()
         }
 
-        if(TAG == "detect") {
+        if(feature == "detect") {
             val options = ObjectDetector.ObjectDetectorOptions.builder()
                 .setMaxResults(5)
-                .setScoreThreshold(0.5f)
+                .setScoreThreshold(0.8f)
                 .build()
             detector = ObjectDetector.createFromFileAndOptions(
                 safeContext, // the application context
@@ -119,12 +119,12 @@ class CameraXFragment : Fragment() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            if (TAG == "detect"){
+            if (feature == "detect"){
                 imageAnalysis.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
                     val image = TensorImage.fromBitmap(imageProxy.toBitmap())
                     val results = detector.detect(image)
-                    val people = debugPrint(results).toString()
-                    textToSpeech.play(people)
+                    val people = getPeopleNum(results).toString()
+                    textToSpeech.play("사람이 $people 명 있습니다.")
                     Toast.makeText(safeContext, people, Toast.LENGTH_SHORT).show()
                     imageProxy.close()
                 })
@@ -221,10 +221,9 @@ class CameraXFragment : Fragment() {
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
     }
 
-    private fun debugPrint(results : List<Detection>): Int {
+    private fun getPeopleNum(results : List<Detection>): Int {
         var peopleNum = 0
         for ((i, obj) in results.withIndex()) {
-
             for ((j, category) in obj.categories.withIndex()) {
                 if (category.label == "person") {
                     peopleNum++

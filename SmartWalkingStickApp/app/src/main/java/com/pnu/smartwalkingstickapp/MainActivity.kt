@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -14,29 +13,25 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
+import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
 import androidx.fragment.app.replace
 import androidx.navigation.NavController
-import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupWithNavController
 import com.pnu.smartwalkingstickapp.databinding.ActivityMainBinding
 import com.pnu.smartwalkingstickapp.ui.bluetooth.BluetoothViewModel
 import com.pnu.smartwalkingstickapp.ui.map_task.MapViewModel
 import com.pnu.smartwalkingstickapp.ui.ocr_task.CameraXFragment
-import com.pnu.smartwalkingstickapp.ui.ocr_task.OcrFragment
 
-class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedListener{
+class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
 
     //private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navHostFragment: NavHostFragment
-    val mapViewModel : MapViewModel by viewModels()
+    val mapViewModel: MapViewModel by viewModels()
     val bluetoothViewModel: BluetoothViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,9 +46,7 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container) as NavHostFragment
 
-        //appBarConfiguration = AppBarConfiguration(navController.graph)
         navController = navHostFragment.navController
-        //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration)
         binding.bottomNav.setupWithNavController(navController)
 
         navController.addOnDestinationChangedListener { controller, destination, arguments ->
@@ -64,8 +57,9 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
             }
         }
 
-        when(val phonePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)){
-            PackageManager.PERMISSION_GRANTED ->  null
+        when (val phonePermission =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)) {
+            PackageManager.PERMISSION_GRANTED -> null
             else -> requestCallPhonePermission()
         }
         supportFragmentManager.addOnBackStackChangedListener(this)
@@ -75,6 +69,9 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
                 runEmergencyCall()
             }
         }
+//        bluetoothViewModel.onReceiveRunCamera.observe(this) {
+//            runCamera(it)
+//        }
     }
 
     private fun requestCallPhonePermission() {
@@ -84,17 +81,22 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
     private fun runEmergencyCall() {
         val sharedPref = this.getPreferences(Context.MODE_PRIVATE) ?: return
         val defaultValue = ""
-        val highScore = sharedPref.getString("number", defaultValue)
+        val savedPhoneNumber = sharedPref.getString("number", defaultValue)
         var intent = Intent(Intent.ACTION_CALL)
-        print(highScore)
-        intent.data = Uri.parse("tel:$highScore")
-        if(intent.resolveActivity(this.packageManager) != null){
+        intent.data = Uri.parse("tel:$savedPhoneNumber")
+        if (intent.resolveActivity(this.packageManager) != null) {
             startActivity(intent)
         }
     }
 
-    fun getNavHostFragment(): NavHostFragment {
-        return navHostFragment
+    private fun runCamera(feature: String) {
+        supportFragmentManager.commit {
+            val bundle = bundleOf("feature" to feature)
+            replace<CameraXFragment>(R.id.nav_host_fragment_container, args = bundle)
+            setReorderingAllowed(true)
+            addToBackStack(null)
+            hideComponent()
+        }
     }
 
 
@@ -106,25 +108,11 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_detect -> {
-                supportFragmentManager.commit {
-                    val bundle = Bundle()
-                    bundle.putString("feature","detect")
-                    replace<CameraXFragment>(R.id.nav_host_fragment_container, args = bundle)
-                    setReorderingAllowed(true)
-                    addToBackStack(null)
-                    hideComponent()
-                }
+                runCamera("detect")
                 super.onOptionsItemSelected(item)
             }
             R.id.menu_text -> {
-                supportFragmentManager.commit {
-                    val bundle = Bundle()
-                    bundle.putString("feature","text")
-                    replace<CameraXFragment>(R.id.nav_host_fragment_container, args = bundle)
-                    setReorderingAllowed(true)
-                    addToBackStack(null)
-                    hideComponent()
-                }
+                runCamera("text")
                 super.onOptionsItemSelected(item)
             }
             else -> super.onOptionsItemSelected(item)
@@ -142,9 +130,9 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
     }
 
     override fun onBackStackChanged() {
-        when(supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container)) {
+        when (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container)) {
             is CameraXFragment -> {
-                 hideComponent()
+                hideComponent()
             }
             else -> {
                 showComponent()

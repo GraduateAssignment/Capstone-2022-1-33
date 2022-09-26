@@ -23,14 +23,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.annotation.RequiresApi
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.utils.WrappedDialogBasicTwoButton
 import java.io.IOException
@@ -41,9 +39,11 @@ import java.util.*
 class BluetoothFragment : Fragment() {
     val bluetoothViewModel: BluetoothViewModel by activityViewModels()
     private lateinit var sharedPref: SharedPreferences
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var emergencyCallNum: TextView
     //private var binding: FragmentBluetoothBinding? = null
-    private val REQUEST_ENABLE_BT=1
-    private val REQUEST_ALL_PERMISSION= 2
+    private val REQUEST_ENABLE_BT = 1
+    private val REQUEST_ALL_PERMISSION = 2
     private val PERMISSIONS = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION
     )
@@ -63,7 +63,7 @@ class BluetoothFragment : Fragment() {
     private val SCAN_PERIOD = 1000
     private var handler = Handler()
     private lateinit var viewManager: RecyclerView.LayoutManager
-    private lateinit var recyclerViewAdapter : RecyclerViewAdapter
+    private lateinit var recyclerViewAdapter: RecyclerViewAdapter
     private val mLeScanCallback = @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     object : ScanCallback() {
         override fun onScanFailed(errorCode: Int) {
@@ -74,10 +74,12 @@ class BluetoothFragment : Fragment() {
         @SuppressLint("MissingPermission")
         override fun onBatchScanResults(results: MutableList<ScanResult>?) {
             super.onBatchScanResults(results)
-            results?.let{
+            results?.let {
                 // results is not null
-                for (result in it){
-                    if (!devicesArr.contains(result.device) && result.device.name!=null) devicesArr.add(result.device)
+                for (result in it) {
+                    if (!devicesArr.contains(result.device) && result.device.name != null) devicesArr.add(
+                        result.device
+                    )
                 }
 
             }
@@ -88,15 +90,17 @@ class BluetoothFragment : Fragment() {
             super.onScanResult(callbackType, result)
             result?.let {
                 // result is not null
-                if (!devicesArr.contains(it.device) && it.device.name!=null) devicesArr.add(it.device)
+                if (!devicesArr.contains(it.device) && it.device.name != null) devicesArr.add(it.device)
                 recyclerViewAdapter.notifyDataSetChanged()
             }
         }
 
     }
+
     @SuppressLint("MissingPermission")
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private fun scanDevice(state:Boolean) = if(state){
+    private fun scanDevice(state: Boolean) = if (state) {
+        Log.v("check: ", "this!! ")
         handler.postDelayed({
             scanning = false
             bluetoothAdapter?.bluetoothLeScanner?.stopScan(mLeScanCallback)
@@ -104,26 +108,24 @@ class BluetoothFragment : Fragment() {
         scanning = true
         devicesArr.clear()
         bluetoothAdapter?.bluetoothLeScanner?.startScan(mLeScanCallback)
-    }else{
+    } else {
         scanning = false
         bluetoothAdapter?.bluetoothLeScanner?.stopScan(mLeScanCallback)
-    }
-    override fun onDestroy() {
-        Log.v("juyong: ", "this3!!")
-        super.onDestroy()
     }
 
     private fun hasPermissions(context: Context?, permissions: Array<String>): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
             for (permission in permissions) {
                 if (ActivityCompat.checkSelfPermission(context, permission)
-                    != PackageManager.PERMISSION_GRANTED) {
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
                     return false
                 }
             }
         }
         return true
     }
+
     // Permission check
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onRequestPermissionsResult(
@@ -135,42 +137,59 @@ class BluetoothFragment : Fragment() {
             REQUEST_ALL_PERMISSION -> {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(requireContext(), "Permissions granted!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Permissions granted!", Toast.LENGTH_SHORT)
+                        .show()
                 } else {
                     requestPermissions(permissions, REQUEST_ALL_PERMISSION)
-                    Toast.makeText(requireContext(), "Permissions must be granted", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Permissions must be granted",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
     }
 
     @SuppressLint("MissingPermission")
-    fun bluetoothOnOff(){
+    fun bluetoothOnOff(isChecked: Boolean) {
         if (bluetoothAdapter == null) {
             // Device doesn't support Bluetooth
-            Log.d("bluetoothAdapter","Device doesn't support Bluetooth")
-        }else{
-            if (bluetoothAdapter?.isEnabled == false) { // 블루투스 꺼져 있으면 블루투스 활성화
+            Log.d("bluetoothAdapter", "Device doesn't support Bluetooth")
+        } else {
+            if (isChecked) { // 블루투스 꺼져 있으면 블루투스 활성화
+                recyclerView.visibility = View.VISIBLE
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
-            } else{ // 블루투스 켜져있으면 블루투스 비활성화
+            } else { // 블루투스 켜져있으면 블루투스 비활성화
                 bluetoothAdapter?.disable()
+                recyclerView.visibility = View.INVISIBLE
             }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when(requestCode) {
+            REQUEST_ENABLE_BT -> scanDevice(true)
         }
     }
 
     class RecyclerViewAdapter(private val myDataset: ArrayList<BluetoothDevice>) :
         RecyclerView.Adapter<RecyclerViewAdapter.MyViewHolder>() {
 
-        var mListener : OnItemClickListener? = null
-        interface OnItemClickListener{
+        var mListener: OnItemClickListener? = null
+
+        interface OnItemClickListener {
             fun onClick(view: View, position: Int)
         }
 
         inner class MyViewHolder(val linearView: LinearLayout) : RecyclerView.ViewHolder(linearView)
 
-        override fun onCreateViewHolder(parent: ViewGroup,
-                                        viewType: Int): RecyclerViewAdapter.MyViewHolder {
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int
+        ): RecyclerViewAdapter.MyViewHolder {
             // create a new view
             val linearView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.recyclerview_item, parent, false) as LinearLayout
@@ -180,13 +199,13 @@ class BluetoothFragment : Fragment() {
         // Replace the contents of a view (invoked by the layout manager)
         @SuppressLint("MissingPermission")
         override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-            val itemName:TextView = holder.linearView.findViewById(R.id.item_name)
-            val itemAddress:TextView = holder.linearView.findViewById(R.id.item_address)
+            val itemName: TextView = holder.linearView.findViewById(R.id.item_name)
+            val itemAddress: TextView = holder.linearView.findViewById(R.id.item_address)
             itemName.text = myDataset[position].name
             itemAddress.text = myDataset[position].address
             // 아래부터 추가코드
-            if(mListener!=null){
-                holder?.itemView?.setOnClickListener{v->
+            if (mListener != null) {
+                holder?.itemView?.setOnClickListener { v ->
                     mListener?.onClick(v, position)
                 }
             }
@@ -213,8 +232,12 @@ class BluetoothFragment : Fragment() {
     @SuppressLint("HandlerLeak")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         sharedPref = activity?.getPreferences(Context.MODE_PRIVATE)!!
-        bluetoothViewModel.navHostFragment((activity as MainActivity).getNavHostFragment())
+
+        if (!hasPermissions(requireContext(), PERMISSIONS)) {
+            requestPermissions(PERMISSIONS, REQUEST_ALL_PERMISSION)
+        }
 
         handler = object : Handler() {
             override fun handleMessage(msg: Message) {
@@ -223,8 +246,8 @@ class BluetoothFragment : Fragment() {
                         val readMessage = String((msg.obj as ByteArray), Charsets.UTF_8)
                         when (readMessage[0]) {
                             '1' -> bluetoothViewModel.runEmergencyCall()
-                            '2' -> bluetoothViewModel.runTask("detect")
-                            '3' -> bluetoothViewModel.runTask("text")
+                            '2' -> bluetoothViewModel.runCamera("detect")
+                            '3' -> bluetoothViewModel.runCamera("text")
                             else -> {
                             }
                         }
@@ -235,7 +258,7 @@ class BluetoothFragment : Fragment() {
             }
         }
         recyclerViewAdapter = RecyclerViewAdapter(devicesArr)
-        recyclerViewAdapter.mListener = object : RecyclerViewAdapter.OnItemClickListener{
+        recyclerViewAdapter.mListener = object : RecyclerViewAdapter.OnItemClickListener {
             @SuppressLint("MissingPermission")
             override fun onClick(view: View, position: Int) {
                 scanDevice(false) // scan 중지
@@ -250,7 +273,8 @@ class BluetoothFragment : Fragment() {
                             mSocket = createBluetoothSocket(device)
                         } catch (e: IOException) {
                             fail = true
-                            Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT)
+                                .show()
                         }
                         // Establish the Bluetooth socket connection.
                         try {
@@ -262,7 +286,11 @@ class BluetoothFragment : Fragment() {
                                 handler.obtainMessage(CONNECTING_STATUS, -1, -1).sendToTarget()
                             } catch (e2: IOException) {
                                 //insert code to deal with this
-                                Toast.makeText(context, "Socket creation failed", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Socket creation failed",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                         if (!fail) {
@@ -273,46 +301,31 @@ class BluetoothFragment : Fragment() {
                 }.start()
             }
         }
-
-        val bleOnOffBtn: ToggleButton = view.findViewById(R.id.ble_on_off_btn)
-        val scanBtn: Button = view.findViewById(R.id.scanBtn)
-        val savePhoneNumBtn: Button = view.findViewById(R.id.savePhoneNumBtn)
+        val bleOnOffBtn: Switch = view.findViewById(R.id.ble_on_off_btn)
+        val emergencyCallCell: ConstraintLayout = view.findViewById(R.id.emergency_call_cell)
+        emergencyCallNum = view.findViewById(R.id.emergency_call_number)
+        initEmergencyCallView()
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         viewManager = LinearLayoutManager(requireContext())
-
-        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerView).apply {
+        recyclerView = view.findViewById<RecyclerView>(R.id.recyclerView).apply {
             layoutManager = viewManager
             adapter = recyclerViewAdapter
         }
 
-        if(bluetoothAdapter!=null){
-            if(bluetoothAdapter?.isEnabled==false){
-                bleOnOffBtn.isChecked = true
-                scanBtn.isVisible = false
-            } else{
-                bleOnOffBtn.isChecked = false
-                scanBtn.isVisible = true
-            }
-        }
-
         bleOnOffBtn.setOnCheckedChangeListener { _, isChecked ->
-            bluetoothOnOff()
-            scanBtn.visibility = if (scanBtn.visibility == View.VISIBLE){ View.INVISIBLE } else{ View.VISIBLE }
+            bluetoothOnOff(isChecked)
         }
 
-        scanBtn.setOnClickListener { v:View? -> // Scan Button Onclick
-            if (!hasPermissions(requireContext(), PERMISSIONS)) {
-                requestPermissions(PERMISSIONS, REQUEST_ALL_PERMISSION)
-            }
-            scanDevice(true)
-        }
-
-        savePhoneNumBtn.setOnClickListener {
+        emergencyCallCell.setOnClickListener {
             showDialog()
         }
     }
-
+    private fun initEmergencyCallView() {
+        val defaultValue = "없음"
+        val phoneNum = sharedPref.getString("number", defaultValue)
+        emergencyCallNum.text = phoneNum
+    }
     @Throws(IOException::class)
     private fun createBluetoothSocket(device: BluetoothDevice): BluetoothSocket? {
         return device.createRfcommSocketToServiceRecord(BT_MODULE_UUID)
@@ -320,25 +333,25 @@ class BluetoothFragment : Fragment() {
     }
 
     private fun showDialog() {
-        val registerPhoneNumDialog = context?.let { it -> WrappedDialogBasicTwoButton(it).apply {
-            clickListener = object : WrappedDialogBasicTwoButton.DialogButtonClickListener{
-                override fun dialogCloseClickListener() {
-                    dismiss()
-                }
-                override fun dialogCustomClickListener() {
-                    with(sharedPref.edit()) {
-                        putString("number", binding.dialogContent.text.toString())
-                        apply()
-                        Toast.makeText(context, "번호가 저장되었습니다.", Toast.LENGTH_SHORT).show()
+        val registerPhoneNumDialog = context?.let { it ->
+            WrappedDialogBasicTwoButton(it).apply {
+                clickListener = object : WrappedDialogBasicTwoButton.DialogButtonClickListener {
+                    override fun dialogCloseClickListener() {
                         dismiss()
+                    }
+
+                    override fun dialogCustomClickListener() {
+                        with(sharedPref.edit()) {
+                            putString("number", binding.dialogContent.text.toString())
+                            apply()
+                            Toast.makeText(context, "번호가 저장되었습니다.", Toast.LENGTH_SHORT).show()
+                            dismiss()
+                            initEmergencyCallView()
+                        }
                     }
                 }
             }
-        } }
+        }
         registerPhoneNumDialog?.show()
-    }
-
-    fun actionToCameraXFragment(bundle: Bundle){
-        findNavController().navigate(R.id.action_nav_bluetooth_fragment_to_nav_camera_x_fragment, bundle)
     }
 }

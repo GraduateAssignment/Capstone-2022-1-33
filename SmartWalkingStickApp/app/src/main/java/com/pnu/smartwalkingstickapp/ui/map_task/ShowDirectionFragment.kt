@@ -48,7 +48,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     private val mapViewModel: MapViewModel by activityViewModels()
     private val showDirectionViewModel: ShowDirectionViewModel by viewModels()
 
-    private var binding: FragmentShowDirectionBinding? = null
+    private var _binding: FragmentShowDirectionBinding? = null
+    private val binding get() = _binding!!
 
     private lateinit var job: Job
     override val coroutineContext: CoroutineContext
@@ -67,8 +68,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     ): View? {
         // Inflate the layout for requireContext fragment
         job = Job()
-        binding = FragmentShowDirectionBinding.inflate(inflater, container, false)
-        return binding!!.root
+        _binding = FragmentShowDirectionBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -89,11 +90,14 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         tMapView.mapType = TMapView.MAPTYPE_STANDARD
         tMapView.setLanguage(TMapView.LANGUAGE_KOREAN)
 
-        binding!!.linearLayoutMap.addView(tMapView)
+        binding.linearLayoutMap.addView(tMapView)
 
         // Request For GPS permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_PERMISSION_LOCATION);
+            requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_PERMISSION_LOCATION
+            );
         }
 
         // GPS using T Map
@@ -118,13 +122,13 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     private fun initNavigateButton() {
-        binding!!.btnStartNavigate.setOnClickListener {
+        binding.btnStartNavigate.setOnClickListener {
             if (!isNavigating) {
                 startNavigating()
-                binding!!.btnStartNavigate.text = "길안내 종료"
+                binding.btnStartNavigate.text = "길안내 종료"
             } else {
                 endNavigating()
-                binding!!.btnStartNavigate.text = "길안내 시작"
+                binding.btnStartNavigate.text = "길안내 시작"
             }
         }
     }
@@ -154,18 +158,11 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        Log.d(TAG, "onRequestPermissionsResult: requestCode : $requestCode")
         if (requestCode == REQUEST_PERMISSION_LOCATION) {
-            Log.d(TAG, "onRequestPermissionsResult()")
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "onRequestPermissionsResult()2")
-                initMapView()
-                setMapPolyLine(adapter.dataSet)
             } else {
-                Log.d(TAG, "onRequestPermissionsResult() _ 권한 허용 거부")
             }
         } else {
-            Log.d(TAG, "onRequestPermissionsResult() _ 권한 허용 거부123")
         }
     }
 
@@ -188,6 +185,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                                 setData(body!!.features)
                                 if (adapter.dataSet.isNotEmpty()) {
                                     if (checkLocationPermission()) {
+                                        Log.d(TAG, "getPathInformation: ")
                                         initMapView()
                                         setMapPolyLine(adapter.dataSet)
                                     } else {
@@ -219,9 +217,9 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     private fun initRcvAdapter() {
-        binding!!.rcvPathData.isNestedScrollingEnabled = false
+        binding.rcvPathData.isNestedScrollingEnabled = false
         adapter = PathDataRecyclerViewAdapter()
-        with(binding!!) {
+        with(binding) {
             rcvPathData.layoutManager = LinearLayoutManager(activity)
             rcvPathData.adapter = adapter
         }
@@ -348,7 +346,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     override fun onDestroyView() {
-        binding = null
+        _binding = null
         super.onDestroyView()
     }
 
