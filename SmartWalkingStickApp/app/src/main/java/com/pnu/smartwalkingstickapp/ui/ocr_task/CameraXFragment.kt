@@ -3,12 +3,14 @@ package com.pnu.smartwalkingstickapp.ui.ocr_task
 import android.Manifest
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.icu.text.SimpleDateFormat
 import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.util.Size
 import android.view.LayoutInflater
@@ -20,11 +22,14 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentCameraXBinding
+import com.pnu.smartwalkingstickapp.ui.bluetooth.BluetoothViewModel
 import com.pnu.smartwalkingstickapp.utils.TTS
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.task.vision.detector.Detection
@@ -34,9 +39,10 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+
 class CameraXFragment : Fragment() {
     private lateinit var binding: FragmentCameraXBinding
-
+    private val bluetoothViewModel: BluetoothViewModel by activityViewModels()
     private lateinit var _viewFinder: PreviewView
     private lateinit var preview: Preview
     private lateinit var imageCapture: ImageCapture
@@ -52,11 +58,13 @@ class CameraXFragment : Fragment() {
     private lateinit var detector: ObjectDetector
 
     private lateinit var feature: String
+    private val REQUEST_CAMERA = 5
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         safeContext = context
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -79,15 +87,23 @@ class CameraXFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        when(val cameraPermission = ContextCompat.checkSelfPermission(safeContext, Manifest.permission.CAMERA)){
-            PackageManager.PERMISSION_GRANTED ->  startCamera()
-            else -> requestPermission()
+        when (val cameraPermission =
+            ContextCompat.checkSelfPermission(safeContext, Manifest.permission.CAMERA)) {
+            PackageManager.PERMISSION_GRANTED -> startCamera()
+            else -> {
+                requestPermission()
+                bluetoothViewModel.onRequestCameraPermission.observe(viewLifecycleOwner) {
+                    if (it) {
+                        startCamera()
+                    }
+                }
+            }
         }
 
-        if(feature == "detect") {
+        if (feature == "detect") {
             val options = ObjectDetector.ObjectDetectorOptions.builder()
                 .setMaxResults(5)
-                .setScoreThreshold(0.8f)
+                .setScoreThreshold(0.5f)
                 .build()
             detector = ObjectDetector.createFromFileAndOptions(
                 safeContext, // the application context
@@ -96,14 +112,18 @@ class CameraXFragment : Fragment() {
             )
         }
     }
+
     private fun requestPermission() {
-        ActivityCompat.requestPermissions(requireActivity(), arrayOf(android.Manifest.permission.CAMERA), 99)
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(android.Manifest.permission.CAMERA),
+            REQUEST_CAMERA
+        )
     }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(safeContext)
         val cameraExecutor = ContextCompat.getMainExecutor(safeContext)
-        var lastAnalyzedTimestamp = 0L
         cameraProviderFuture.addListener(Runnable {
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
@@ -119,31 +139,30 @@ class CameraXFragment : Fragment() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            if (feature == "detect"){
+            if (feature == "detect") {
                 imageAnalysis.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
-                    val image = TensorImage.fromBitmap(imageProxy.toBitmap())
-                    val results = detector.detect(image)
-                    val people = getPeopleNum(results).toString()
-                    textToSpeech.play("사람이 $people 명 있습니다.")
-                    Toast.makeText(safeContext, people, Toast.LENGTH_SHORT).show()
-                    imageProxy.close()
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        val image = TensorImage.fromBitmap(imageProxy.toBitmap())
+                        val results = detector.detect(image)
+                        val people = getPeopleNum(results).toString()
+                        textToSpeech.play("사람이 $people 명 있습니다.")
+                        Toast.makeText(safeContext, people, Toast.LENGTH_SHORT).show()
+                        imageProxy.close()
+                    }, 3000)
                 })
-            }
-            else {
+            } else {
                 imageAnalysis.setAnalyzer(cameraExecutor, ImageAnalysis.Analyzer { imageProxy ->
-                    val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-                    val mediaImage = imageProxy.image
-                    if (mediaImage != null) {
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null) {
                             val image = InputImage.fromMediaImage(mediaImage, rotationDegrees)
                             val result = recognizer.process(image)
                                 .addOnSuccessListener {
-                                    val currentTimestamp = System.currentTimeMillis()
-                                    if (currentTimestamp - lastAnalyzedTimestamp >= TimeUnit.SECONDS.toMillis(5)) {
-                                        for (block in it.textBlocks) {
-                                            textToSpeech.play(block.text)
-                                            Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT).show()
-                                        }
-                                        lastAnalyzedTimestamp = currentTimestamp
+                                    for (block in it.textBlocks) {
+                                        textToSpeech.play(block.text)
+                                        Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT)
+                                            .show()
                                     }
                                 }
                                 .addOnFailureListener {
@@ -152,7 +171,8 @@ class CameraXFragment : Fragment() {
                                 .addOnCompleteListener {
                                     imageProxy.close()
                                 }
-                    }
+                        }
+                    }, 3000)
                 })
             }
 
@@ -160,35 +180,48 @@ class CameraXFragment : Fragment() {
 
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalysis)
-            } catch(exception: Exception) {
+                cameraProvider.bindToLifecycle(
+                    this,
+                    cameraSelector,
+                    preview,
+                    imageCapture,
+                    imageAnalysis
+                )
+            } catch (exception: Exception) {
                 Log.e(ContentValues.TAG, "Use case binding failed", exception)
             }
         }, ContextCompat.getMainExecutor(safeContext))
     }
+
     private fun takePhoto() {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
         // Create timestamped output file to hold the image
-        val photoFile = File(outputDirectory, SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis()) + ".jpg")
+        val photoFile = File(
+            outputDirectory,
+            SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis()) + ".jpg"
+        )
 
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         // Setup image capture listener which is triggered after photo has
         // been taken
-        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(safeContext), object : ImageCapture.OnImageSavedCallback {
-            override fun onError(exc: ImageCaptureException) {
-                Log.e(ContentValues.TAG, "Photo capture failed: ${exc.message}", exc)
-            }
+        imageCapture.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(safeContext),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onError(exc: ImageCaptureException) {
+                    Log.e(ContentValues.TAG, "Photo capture failed: ${exc.message}", exc)
+                }
 
-            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                val savedUri = Uri.fromFile(photoFile)
-                val msg = "Photo capture succeeded: $savedUri"
-                Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
-                Log.d(ContentValues.TAG, msg)
-            }
-        })
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    val savedUri = Uri.fromFile(photoFile)
+                    val msg = "Photo capture succeeded: $savedUri"
+                    Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
+                    Log.d(ContentValues.TAG, msg)
+                }
+            })
     }
 
 
@@ -221,7 +254,7 @@ class CameraXFragment : Fragment() {
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
     }
 
-    private fun getPeopleNum(results : List<Detection>): Int {
+    private fun getPeopleNum(results: List<Detection>): Int {
         var peopleNum = 0
         for ((i, obj) in results.withIndex()) {
             for ((j, category) in obj.categories.withIndex()) {
@@ -232,6 +265,7 @@ class CameraXFragment : Fragment() {
         }
         return peopleNum
     }
+
     companion object {
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
     }
