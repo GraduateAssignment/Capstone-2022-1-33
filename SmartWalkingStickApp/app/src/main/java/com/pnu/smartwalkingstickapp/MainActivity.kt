@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -28,11 +29,14 @@ import com.pnu.smartwalkingstickapp.ui.ocr_task.CameraXFragment
 class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+    private val REQUEST_ALL_PERMISSION = 2
+    private val REQUEST_CALL = 4
+    private val REQUEST_CAMERA = 5
 
     //private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navHostFragment: NavHostFragment
     val mapViewModel: MapViewModel by viewModels()
-    val bluetoothViewModel: BluetoothViewModel by viewModels()
+    private val bluetoothViewModel: BluetoothViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,11 +61,6 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
             }
         }
 
-        when (val phonePermission =
-            ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)) {
-            PackageManager.PERMISSION_GRANTED -> null
-            else -> requestCallPhonePermission()
-        }
         supportFragmentManager.addOnBackStackChangedListener(this)
 
         bluetoothViewModel.onReceiveRunEmergencyCall.observe(this) {
@@ -69,13 +68,43 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
                 runEmergencyCall()
             }
         }
-//        bluetoothViewModel.onReceiveRunCamera.observe(this) {
-//            runCamera(it)
-//        }
+        bluetoothViewModel.onReceiveRunCamera.observe(this) {
+            if (it != "") {
+                runCamera(it)
+            }
+        }
     }
 
-    private fun requestCallPhonePermission() {
-        ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CALL_PHONE), 99)
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        Log.v("juyong: 2-", requestCode.toString())
+        when (requestCode) {
+            REQUEST_CALL -> {
+                if (getSuccessRequest(grantResults)) {
+                    bluetoothViewModel.setRequestCallPermissionsResult(true)
+                }
+            }
+            REQUEST_CAMERA -> {
+                if (getSuccessRequest(grantResults)) {
+                    bluetoothViewModel.setRequestCameraPermissionsResult(true)
+                }
+            }
+            REQUEST_ALL_PERMISSION -> {
+                if (getSuccessRequest(grantResults)) {
+                    bluetoothViewModel.setRequestBluetoothPermissionsResult(true)
+                }
+            }
+        }
+    }
+
+    fun getSuccessRequest(grantResults: IntArray): Boolean {
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            return true
+        }
+        return false
     }
 
     private fun runEmergencyCall() {

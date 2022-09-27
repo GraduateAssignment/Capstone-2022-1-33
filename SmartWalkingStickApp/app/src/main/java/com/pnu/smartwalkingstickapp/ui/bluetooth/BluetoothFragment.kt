@@ -25,11 +25,14 @@ import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.pnu.smartwalkingstickapp.R
+import com.pnu.smartwalkingstickapp.utils.TTS
 import com.pnu.smartwalkingstickapp.utils.WrappedDialogBasicTwoButton
 import java.io.IOException
 import java.io.UnsupportedEncodingException
@@ -42,10 +45,17 @@ class BluetoothFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var emergencyCallNum: TextView
     private lateinit var connectedThread: ConnectedThread
+
+    private lateinit var textToSpeech: TTS
+
+    private lateinit var connectedDeviceCell: ConstraintLayout
+    private lateinit var connectedDeviceName: TextView
     private var flag = false
+
     //private var binding: FragmentBluetoothBinding? = null
     private val REQUEST_ENABLE_BT = 1
     private val REQUEST_ALL_PERMISSION = 2
+    private val REQUEST_CALL = 4
     private val PERMISSIONS = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.BLUETOOTH_CONNECT,
@@ -104,7 +114,6 @@ class BluetoothFragment : Fragment() {
     @SuppressLint("MissingPermission")
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun scanDevice(state: Boolean) = if (state) {
-        Log.v("check: ", "this!! ")
         handler.postDelayed({
             scanning = false
             bluetoothAdapter?.bluetoothLeScanner?.stopScan(mLeScanCallback)
@@ -137,6 +146,7 @@ class BluetoothFragment : Fragment() {
         permissions: Array<String?>,
         grantResults: IntArray
     ) {
+        Log.v("juyong: 1-", requestCode.toString())
         when (requestCode) {
             REQUEST_ALL_PERMISSION -> {
                 // If request is cancelled, the result arrays are empty.
@@ -168,13 +178,15 @@ class BluetoothFragment : Fragment() {
             } else { // 블루투스 켜져있으면 블루투스 비활성화
                 bluetoothAdapter?.disable()
                 recyclerView.visibility = View.INVISIBLE
+                connectedDeviceCell.visibility = View.GONE
+                connectedDeviceName.text = ""
             }
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        when(requestCode) {
+        when (requestCode) {
             REQUEST_ENABLE_BT -> scanDevice(true)
         }
     }
@@ -206,7 +218,7 @@ class BluetoothFragment : Fragment() {
             val itemName: TextView = holder.linearView.findViewById(R.id.item_name)
             val itemAddress: TextView = holder.linearView.findViewById(R.id.item_address)
             itemName.text = myDataset[position].name
-            itemAddress.text = myDataset[position].address
+            itemAddress.text = "연결안됨"
             // 아래부터 추가코드
             if (mListener != null) {
                 holder?.itemView?.setOnClickListener { v ->
@@ -238,10 +250,7 @@ class BluetoothFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         sharedPref = activity?.getPreferences(Context.MODE_PRIVATE)!!
-
-        if (!hasPermissions(requireContext(), PERMISSIONS)) {
-            requestPermissions(PERMISSIONS, REQUEST_ALL_PERMISSION)
-        }
+        textToSpeech = context?.let { TTS(it) }!!
 
         handler = object : Handler() {
             override fun handleMessage(msg: Message) {
@@ -261,6 +270,8 @@ class BluetoothFragment : Fragment() {
                 }
             }
         }
+        connectedDeviceName = view.findViewById<TextView>(R.id.connected_device_name)
+        connectedDeviceCell = view.findViewById<ConstraintLayout>(R.id.connected_device_cell)
         recyclerViewAdapter = RecyclerViewAdapter(devicesArr)
         recyclerViewAdapter.mListener = object : RecyclerViewAdapter.OnItemClickListener {
             @SuppressLint("MissingPermission")
@@ -298,10 +309,13 @@ class BluetoothFragment : Fragment() {
                             }
                         }
                         if (!fail) {
+                            connectedDeviceCell.visibility = View.VISIBLE
+                            connectedDeviceName.text = device.name
                             connectedThread = ConnectedThread(mSocket!!, handler)
                             connectedThread.start()
                             flag = true
                             handler.obtainMessage(CONNECTING_STATUS, 1, -1, name).sendToTarget()
+                            textToSpeech.play("연결되었습니다.")
                         }
                     }
                 }.start()
@@ -322,25 +336,60 @@ class BluetoothFragment : Fragment() {
         }
 
         bleOnOffBtn.setOnCheckedChangeListener { _, isChecked ->
-            bluetoothOnOff(isChecked)
+            if (isChecked && !hasPermissions(requireContext(), PERMISSIONS)) {
+                requestBluetoothPermission()
+                bluetoothViewModel.onRequestBluetoothPermissionsResult.observe(viewLifecycleOwner) {
+                    if (it) {
+                        bluetoothOnOff(isChecked)
+                    }
+                }
+            }
+            else {
+                bluetoothOnOff(isChecked)
+            }
         }
 
         emergencyCallCell.setOnClickListener {
-            showDialog()
+            when (val phonePermission =
+                ContextCompat.checkSelfPermission(context!!, Manifest.permission.CALL_PHONE)) {
+                PackageManager.PERMISSION_GRANTED -> showDialog()
+                else -> requestCallPhonePermission()
+            }
+            bluetoothViewModel.onRequestCallPermissionsResult.observe(viewLifecycleOwner) {
+                if (it) {
+                    showDialog()
+                }
+            }
         }
 
         findCaneCell.setOnClickListener {
-            if (flag){
+            if (flag) {
                 val writeMessage = "f".toByteArray()
                 connectedThread.write(writeMessage)
             }
         }
     }
+    private fun requestBluetoothPermission() {
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            PERMISSIONS,
+            REQUEST_ALL_PERMISSION
+        )
+    }
+    private fun requestCallPhonePermission() {
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(android.Manifest.permission.CALL_PHONE),
+            REQUEST_CALL
+        )
+    }
+
     private fun initEmergencyCallView() {
         val defaultValue = "없음"
         val phoneNum = sharedPref.getString("number", defaultValue)
         emergencyCallNum.text = phoneNum
     }
+
     @Throws(IOException::class)
     private fun createBluetoothSocket(device: BluetoothDevice): BluetoothSocket? {
         return device.createRfcommSocketToServiceRecord(BT_MODULE_UUID)
