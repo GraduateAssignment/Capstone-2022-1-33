@@ -25,7 +25,7 @@
         좌 / 우 명령에 따라 좌우 회전 - turnServo() 호출
 */
 #include <keyword.h>
-volatile bool togLED = false, togSonar = false;
+volatile bool togLED = false, togSonar = false, togBuzz = false;
 volatile bool sDir[3] = {false, false, false};
 volatile Servo servo;
 bool flag = false;

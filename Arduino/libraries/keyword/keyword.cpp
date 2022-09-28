@@ -1,8 +1,7 @@
 #include "Arduino.h"
 #include "keyword.h"
 extern Servo servo;
-extern bool togSonar;
-extern bool togLED;
+extern bool togSonar, togLED, togBuzz;
 extern bool sDir[3];
 /* intr1 */
 void toggleSonar(){
@@ -112,6 +111,10 @@ void switchServo(){
 		turnServo(1);
 	}
 }
+void findStick(){
+	togBuzz = !togBuzz;
+	alarm(togBuzz);
+}
 /* Bluetooth */
 void callBLE(char ch){
 	if(ch == 'a'){
@@ -128,5 +131,8 @@ void callBLE(char ch){
     }
 	else if(ch == 'e'){
 		toggleSonar();
+	}
+	else if(ch == 'f'){
+		findStick();
 	}
 }
