@@ -17,14 +17,15 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.location.*
-import com.pnu.smartwalkingstickapp.R
+import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.databinding.FragmentShowDirectionBinding
+import com.pnu.smartwalkingstickapp.ui.bluetooth.BluetoothViewModel
 import com.pnu.smartwalkingstickapp.ui.map_task.response.path.Feature
 import com.pnu.smartwalkingstickapp.ui.map_task.utility.Key
 import com.pnu.smartwalkingstickapp.ui.map_task.utility.RetrofitUtil
+import com.pnu.smartwalkingstickapp.utils.TTS
 import com.skt.Tmap.TMapGpsManager
 import com.skt.Tmap.TMapPoint
 import com.skt.Tmap.TMapPolyLine
@@ -35,18 +36,19 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.math.pow
 
 
-class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitListener {
+class ShowDirectionFragment : Fragment(), CoroutineScope {
 
     private val REQUEST_PERMISSION_LOCATION = 101
+    private lateinit var ttsSpeaker : TTS
 
-
+    private var isInit = false
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var tMapView: TMapView
     private lateinit var tMapGps: TMapGpsManager
-    private var navigatePosition = 0
 
     private val mapViewModel: MapViewModel by activityViewModels()
     private val showDirectionViewModel: ShowDirectionViewModel by viewModels()
+    private val bluetoothViewModel: BluetoothViewModel by activityViewModels()
 
     private var _binding: FragmentShowDirectionBinding? = null
     private val binding get() = _binding!!
@@ -57,10 +59,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
     val TAG = "jiwoo"
 
-    private var isNavigating: Boolean = false
     private lateinit var adapter: PathDataRecyclerViewAdapter
 
-    private var tts: TextToSpeech? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -74,11 +74,33 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        ttsSpeaker = TTS(requireContext())
+        showDirectionViewModel.setCurIndex(1)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
         initRcvAdapter()
-        getPathInformation()
         initNavigateButton()
-        showDirectionViewModel.print()
+
+        val act = activity as MainActivity
+        act.showComponent()
+        act.hideNav()
+        ttsSpeaker.play("경로를 검색중입니다. 잠시만 기다려주세요.")
+
+        if(showDirectionViewModel.isNavigating) {
+            binding.btnStartNavigate.text = "길안내 종료"
+        }
+
+        if (checkLocationPermission()) {
+            bluetoothViewModel.setOnMapPermissionResult()
+            startNavigating()
+        }
+
+        bluetoothViewModel.onMapPermissionResult.observe(viewLifecycleOwner) {
+            if (it) {
+                startNavigating()
+            } else {
+                Toast.makeText(requireContext(), "권한이 거부되어있습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun initMapView() {
@@ -97,7 +119,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
             requestPermissions(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                 REQUEST_PERMISSION_LOCATION
-            );
+            )
         }
 
         // GPS using T Map
@@ -109,29 +131,42 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         tMapGps.provider = "network";
 
         tMapView.setCenterPoint(
-            mapViewModel.startPoi!!.frontLon.toDouble(),
-            mapViewModel.startPoi!!.frontLat.toDouble()
+            showDirectionViewModel.curPosition.value!!.first,
+            showDirectionViewModel.curPosition.value!!.second
         )
         tMapView.setLocationPoint(
-            mapViewModel.startPoi!!.frontLon.toDouble(),
-            mapViewModel.startPoi!!.frontLat.toDouble()
+            showDirectionViewModel.curPosition.value!!.first,
+            showDirectionViewModel.curPosition.value!!.second
         )
-
         tMapGps.OpenGps();
-        Log.d(TAG, "initMapView: ${tMapGps.location.longitude} ${tMapGps.location.latitude}")
     }
 
     private fun initNavigateButton() {
         binding.btnStartNavigate.setOnClickListener {
-            if (!isNavigating) {
-                startNavigating()
+            if (!showDirectionViewModel.isNavigating) { // 현재 길안내중이 아니라면
+                startGuiding() // 길안내시작
                 binding.btnStartNavigate.text = "길안내 종료"
             } else {
                 endNavigating()
                 binding.btnStartNavigate.text = "길안내 시작"
             }
         }
+        binding.btnStartNavigate.setOnLongClickListener {
+            val msg = {
+                if(showDirectionViewModel.isNavigating) {
+                    "길안내 종료"
+                }
+                else{
+                    "길안내 시작"
+                }
+            }
+            ttsSpeaker.play(msg.toString())
+            true
+        }
     }
+
+
+    // 권한체크 --> 권한 Observing --> 위치가져오기 --> 위치 가져와지면 --> getPath --> initMapView
 
     private fun checkLocationPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -153,28 +188,15 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == REQUEST_PERMISSION_LOCATION) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            } else {
-            }
-        } else {
-        }
-    }
-
     private fun getPathInformation() {
         with(mapViewModel) {
             launch(coroutineContext) {
                 try {
                     withContext(Dispatchers.IO) {
                         val response = RetrofitUtil.apiService.getPath(
-                            startX = startPoi!!.frontLon,
-                            startY = startPoi!!.frontLat,
-                            startName = startPoi!!.name!!,
+                            startX = showDirectionViewModel.curPosition.value!!.first.toFloat(),
+                            startY = showDirectionViewModel.curPosition.value!!.second.toFloat(),
+                            startName = "현재위치",
                             endX = destPoi!!.frontLon,
                             endY = destPoi!!.frontLat,
                             endName = destPoi!!.name!!
@@ -184,12 +206,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                             withContext(Dispatchers.Main) {
                                 setData(body!!.features)
                                 if (adapter.dataSet.isNotEmpty()) {
-                                    if (checkLocationPermission()) {
-                                        Log.d(TAG, "getPathInformation: ")
-                                        initMapView()
-                                        setMapPolyLine(adapter.dataSet)
-                                    } else {
-                                    }
+                                    setMapPolyLine(adapter.dataSet)
                                 } else {
                                     Log.d(TAG, "initNavigateButton: empty")
                                 }
@@ -218,7 +235,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
 
     private fun initRcvAdapter() {
         binding.rcvPathData.isNestedScrollingEnabled = false
-        adapter = PathDataRecyclerViewAdapter()
+        adapter = PathDataRecyclerViewAdapter(requireContext())
         with(binding) {
             rcvPathData.layoutManager = LinearLayoutManager(activity)
             rcvPathData.adapter = adapter
@@ -227,9 +244,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     private fun setData(featureList: List<Feature>) {
-        Log.d(TAG, "setData: ${featureList.size}")
         adapter.setData(featureList)
-        Log.d(TAG, "setData: $featureList")
         //adapter.setData(featureList.filter { it.properties.pointType == "GP" })
     }
 
@@ -244,10 +259,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.d(TAG, "startNavigatings() 두 위치 권한중 하나라도 없는 경우 ")
             return
         }
-        isNavigating = true
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val mLocationRequest = LocationRequest.create().apply {
             interval = 3000 // 업데이트 간격 단위(밀리초)
@@ -262,13 +275,29 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         )
     }
 
+    private fun startGuiding() {
+        showDirectionViewModel.isNavigating = true
+        ttsSpeaker.play("경로 안내를 시작합니다.")
+    }
+
+
     private val mLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             // 시스템에서 받은 location 정보를 onLocationChanged()에 전달
             val location = locationResult.lastLocation!!
-            tMapView.setLocationPoint(location!!.longitude, location.latitude)
+            if (!isInit) {
+                showDirectionViewModel.setPosition(Pair(location.longitude, location.latitude))
+                initMapView()
+                getPathInformation()
+                isInit = true
+            } else {
+                showDirectionViewModel.setPosition(Pair(location.longitude, location.latitude))
+            }
+            tMapView.setLocationPoint(location.longitude, location.latitude)
             tMapView.setCenterPoint(location.longitude, location.latitude)
-            announceNavigate(location.latitude, location.longitude)
+            if (showDirectionViewModel.isNavigating) {
+                announceNavigate(location.latitude, location.longitude)
+            }
         }
     }
 
@@ -294,27 +323,24 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
     }
 
     private fun announceNavigate(newCurLon: Double, newCurLat: Double) {
+        val navigatePosition = showDirectionViewModel.getCurIndex()
         if (navigatePosition < adapter.dataSet.size) {
             val destFeature = adapter.dataSet[navigatePosition] // 현재 가려고 하는 경유지
             val destPos = getCoordinate(destFeature) // 현재 가려고 하는 경유지의 좌표
             val distance = getDistance(Pair(newCurLon, newCurLat), destPos!!)
-            if (distance < 2) {
-                Log.e(TAG, "approach ${destFeature.properties.description} ")
-                Toast.makeText(
-                    requireContext(),
-                    "${adapter.dataSet[navigatePosition]} $distance",
-                    Toast.LENGTH_SHORT
-                ).show()
-                navigatePosition++
-            } else {
-                Log.d(
-                    TAG,
-                    "destFeature : ${destFeature.properties.description}  distance : $distance"
-                )
+            Log.e(TAG, "distance : $distance")
+            if (distance < 5) {
+                Log.e(TAG, destFeature.properties.description)
+                // TODO 음성안내
+                if (navigatePosition == adapter.dataSet.size - 1) { // 목적지에 도착한 경우
+                    Log.e(TAG, "목적지에 도착했습니다. 경로 안내를 종료합니다.")
+                    endNavigating()
+                }
+                else {
+                    showDirectionViewModel.setCurIndex(navigatePosition + 1)
+                    ttsSpeaker.play("${destFeature.properties.description}")
+                }
             }
-        } else {
-            navigatePosition = 0
-            Toast.makeText(requireContext(), "목적지에 도착했습니다.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -334,45 +360,25 @@ class ShowDirectionFragment : Fragment(), CoroutineScope, TextToSpeech.OnInitLis
         return (R * c).toInt()
     }
 
-
-    private fun initTextToSpeech() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            Toast.makeText(activity, "SDK version is low", Toast.LENGTH_SHORT).show()
-            return
-        }
-        tts = TextToSpeech(requireContext(), this)
-
-
-    }
-
     override fun onDestroyView() {
         _binding = null
+        fusedLocationClient.removeLocationUpdates(mLocationCallback)
+        isInit = false
+        showDirectionViewModel.setCurIndex(1)
+        Log.d(TAG, "onDestroyView: ")
         super.onDestroyView()
     }
 
-    override fun onInit(p0: Int) {
-        TODO("Not yet implemented")
-    }
-
     private fun endNavigating() {
-        if (isNavigating) {
-            fusedLocationClient.removeLocationUpdates(mLocationCallback)
-            isNavigating = false
+        if (showDirectionViewModel.isNavigating) {
+            showDirectionViewModel.isNavigating = false
         }
     }
-
 
     override fun onStop() {
         super.onStop()
         // 위치 업데이터를 제거 하는 메서드
         // 지정된 위치 결과 리스너에 대한 모든 위치 업데이트를 제거
-        endNavigating()
-    }
-
-    fun actionToCameraXFragment(bundle: Bundle) {
-        findNavController().navigate(
-            R.id.action_showDirectionFragment_to_nav_camera_x_fragment,
-            bundle
-        )
+        //endNavigating()
     }
 }

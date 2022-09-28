@@ -1,6 +1,5 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
-import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -12,11 +11,11 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.annotation.RequiresApi
 import androidx.core.view.children
-import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.databinding.FragmentMapBinding
 import com.pnu.smartwalkingstickapp.ui.map_task.response.search.Poi
@@ -59,30 +58,20 @@ class MapFragment : Fragment(), CoroutineScope {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Log.d(TAG, "Map onViewCreated: ")
+        val act = activity as MainActivity
+        act.showComponent()
         ttsSpeaker = TTS(requireContext())
-        initButtonLongClickListenerForTTS()
         initFindingDirectionButton()
         initRcvAdapter()
         initButton()
-        initSwapBtn()
-    }
-
-    private fun initSwapBtn() {
-        binding!!.btnSwapStartDest.setOnClickListener {
-            mapViewModel.swapPoint()
-            val temp = binding!!.etvDeparture.text.toString()
-            binding!!.etvDeparture.setText(binding!!.etvDestination.text.toString())
-            binding!!.etvDestination.setText(temp)
-        }
     }
 
     private fun initFindingDirectionButton() {
         binding!!.btnFindPath.setOnClickListener {
             with(mapViewModel) {
-                if(startPoi != null && destPoi != null) {
-                    val text = startPoi!!.name + " 그리고 " + destPoi!!.name +"로 길찾기를 시작합니다."
-
-                    ttsSpeaker.play(text.toString())
+                if(destPoi != null) {
+                    val text = "현재위치에서 " + destPoi!!.name +"까지 길찾기를 시작합니다."
+                    ttsSpeaker.play(text)
                     ttsSpeaker.ttsState.observe(viewLifecycleOwner) {
                         Log.d(TAG, "initFindingDirectionButton: $it ")
                         if(it == 0) {
@@ -94,41 +83,10 @@ class MapFragment : Fragment(), CoroutineScope {
         }
     }
 
-    private fun initButtonLongClickListenerForTTS() {
-        binding!!.constraintlayoutRoot.children.forEach { view ->
-            view.setOnLongClickListener {
-                if (view == view.findViewById<Button>(R.id.btn_findPath)) {
-                    Log.d("btn ", "길찾기 버튼")
-                    val btn = view.findViewById<Button>(R.id.btn_findPath)
-                    text = btn!!.text.toString()
-                }
-                if (view == view.findViewById<EditText>(R.id.etv_departure)) {
-                    Log.d("btn ", "출발지 입력칸")
-                    val btn = view.findViewById<EditText>(R.id.etv_departure)
-                    text = btn!!.text.toString()
-                }
-                if (view == view.findViewById<EditText>(R.id.etv_destination)) {
-                    Log.d("btn ", "도착지 입력칸")
-                    val btn = view.findViewById<EditText>(R.id.etv_destination)
-                    text = btn!!.text.toString()
-                }
-                if (text != "") {
-                    // TODO : TTs 기능
-                    text = ""
-                }
-                return@setOnLongClickListener true
-            }
-
-        }
-    }
-
     private fun initButton() {
         with(binding!!) {
-            btnStartPOI.setOnClickListener {
-                state = "start"
-                getPOIData(etvDeparture.text.toString())
-            }
             btnDestPOI.setOnClickListener {
+                ttsSpeaker.play("${etvDestination.text} 으로 검색을 시작합니다. ")
                 state = "dest"
                 getPOIData(etvDestination.text.toString())
             }
@@ -138,17 +96,12 @@ class MapFragment : Fragment(), CoroutineScope {
     private fun initRcvAdapter() {
         adapter = PoiDataRecyclerViewAdapter().apply {
             setOnStateInterface(object : OnPoiDataItemClick {
-                override fun sendData(item: Poi) {
+                override fun sendData(data: Poi) {
                     when (state) {
-                        "start" -> {
-                            mapViewModel.startPoi = item
-                            binding!!.etvDeparture.setText(item.name)
-                            binding!!.etvDeparture.setSelection(item.name!!.length)
-                        }
                         "dest" -> {
-                            mapViewModel.destPoi = item
-                            binding!!.etvDestination.setText(item.name)
-                            binding!!.etvDestination.setSelection(item.name!!.length)
+                            mapViewModel.destPoi = data
+                            binding!!.etvDestination.setText(data.name)
+                            binding!!.etvDestination.setSelection(data.name!!.length)
                         }
 
                     }

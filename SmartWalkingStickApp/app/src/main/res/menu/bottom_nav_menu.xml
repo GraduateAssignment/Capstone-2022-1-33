@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_map_fragment"
-        android:title="MAP"
+        android:title="지도"
         android:icon="@drawable/ic_launcher_foreground"/>
 
     <item
