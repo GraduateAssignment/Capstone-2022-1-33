@@ -34,5 +34,6 @@ void alarm(bool);
 void turnServo(int);
 void switchServo();
 void callBLE(char);
+void findStick();
 
 #endif
