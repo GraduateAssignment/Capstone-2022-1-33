@@ -22,6 +22,13 @@ class BluetoothViewModel() : ViewModel() {
     private val _onRequestBluetoothPermissionsResult = MutableLiveData<Boolean>(false)
     val onRequestBluetoothPermissionsResult:LiveData<Boolean> = _onRequestBluetoothPermissionsResult
 
+    private val _onMapPermissionResult = MutableLiveData<Boolean>(false)
+    val onMapPermissionResult:LiveData<Boolean> = _onMapPermissionResult
+
+    fun setOnMapPermissionResult() {
+        _onMapPermissionResult.value = true
+    }
+
     fun runEmergencyCall() {
         _onReceiveRunEmergencyCall.postValue(true)
     }

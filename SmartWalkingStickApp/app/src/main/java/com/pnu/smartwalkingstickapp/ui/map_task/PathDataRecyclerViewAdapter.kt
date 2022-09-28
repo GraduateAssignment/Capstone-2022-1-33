@@ -1,21 +1,29 @@
 package com.pnu.smartwalkingstickapp.ui.map_task
 
+import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.pnu.smartwalkingstickapp.databinding.MenuRcvPathDataBinding
-import com.pnu.smartwalkingstickapp.databinding.MenuRcvPoiDataBinding
 import com.pnu.smartwalkingstickapp.ui.map_task.response.path.Feature
-import com.pnu.smartwalkingstickapp.ui.map_task.response.search.Poi
+import com.pnu.smartwalkingstickapp.utils.TTS
 
-class PathDataRecyclerViewAdapter : RecyclerView.Adapter<PathDataRecyclerViewAdapter.ViewHolder> () {
+class PathDataRecyclerViewAdapter(private val context: Context) :
+    RecyclerView.Adapter<PathDataRecyclerViewAdapter.ViewHolder>() {
     var dataSet = listOf<Feature>()
+    val ttsSpeaker = TTS(context)
 
-    class ViewHolder(private val binding: MenuRcvPathDataBinding) : RecyclerView.ViewHolder(binding.root){
-        fun bind(item : Feature){
-            with(binding){
+    inner class ViewHolder(private val binding: MenuRcvPathDataBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(item: Feature) {
+            with(binding) {
                 feature = item
+                layoutPoiData.setOnLongClickListener {
+                    true
+                }
             }
+
         }
     }
 
@@ -34,7 +42,7 @@ class PathDataRecyclerViewAdapter : RecyclerView.Adapter<PathDataRecyclerViewAda
         return dataSet.size
     }
 
-    fun setData(newList : List<Feature>){
+    fun setData(newList: List<Feature>) {
         dataSet = newList
         notifyDataSetChanged()
     }

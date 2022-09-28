@@ -26,17 +26,14 @@ class TTS (context: Context) {
         })
         textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(p0: String?) {
-                Log.d("TAG", "onStart: ")
                 ttsState.postValue(1)
             }
 
             override fun onDone(p0: String?) {
-                Log.d("TAG", "33onStart: ")
                 ttsState.postValue(0)
             }
 
             override fun onError(p0: String?) {
-                Log.d("TAG", "onStart:2 ")
                 ttsState.postValue(-1)
             }
         })

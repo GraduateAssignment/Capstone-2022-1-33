@@ -1,6 +1,5 @@
 package com.pnu.smartwalkingstickapp
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,8 +11,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
@@ -22,16 +19,20 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.pnu.smartwalkingstickapp.databinding.ActivityMainBinding
+import com.pnu.smartwalkingstickapp.ui.bluetooth.BluetoothFragment
 import com.pnu.smartwalkingstickapp.ui.bluetooth.BluetoothViewModel
+import com.pnu.smartwalkingstickapp.ui.map_task.MapFragment
 import com.pnu.smartwalkingstickapp.ui.map_task.MapViewModel
+import com.pnu.smartwalkingstickapp.ui.map_task.ShowDirectionFragment
 import com.pnu.smartwalkingstickapp.ui.ocr_task.CameraXFragment
 
-class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedListener {
+class MainActivity : AppCompatActivity(){
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private val REQUEST_ALL_PERMISSION = 2
     private val REQUEST_CALL = 4
     private val REQUEST_CAMERA = 5
+    private val REQUEST_PERMISSION_LOCATION = 101
 
     //private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navHostFragment: NavHostFragment
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+        supportActionBar!!.title = "스마트지팡이 앱"
         invalidateOptionsMenu()
 
         navHostFragment =
@@ -56,12 +58,10 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
         navController.addOnDestinationChangedListener { controller, destination, arguments ->
             when (destination.id) {
                 R.id.nav_camera_x_fragment -> binding.bottomNav.visibility = View.GONE
-                R.id.showDirectionFragment -> binding.bottomNav.visibility = View.GONE
                 else -> binding.bottomNav.visibility = View.VISIBLE
             }
         }
 
-        supportFragmentManager.addOnBackStackChangedListener(this)
 
         bluetoothViewModel.onReceiveRunEmergencyCall.observe(this) {
             if (it) {
@@ -80,7 +80,6 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        Log.v("juyong: 2-", requestCode.toString())
         when (requestCode) {
             REQUEST_CALL -> {
                 if (getSuccessRequest(grantResults)) {
@@ -95,6 +94,11 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
             REQUEST_ALL_PERMISSION -> {
                 if (getSuccessRequest(grantResults)) {
                     bluetoothViewModel.setRequestBluetoothPermissionsResult(true)
+                }
+            }
+            REQUEST_PERMISSION_LOCATION -> {
+                if (getSuccessRequest(grantResults)) {
+                    bluetoothViewModel.setOnMapPermissionResult()
                 }
             }
         }
@@ -148,25 +152,17 @@ class MainActivity : AppCompatActivity(), FragmentManager.OnBackStackChangedList
         }
     }
 
-    private fun hideComponent() {
+    fun hideComponent() {
         binding.bottomNav.visibility = View.GONE
         binding.toolbar.visibility = View.GONE
     }
 
-    private fun showComponent() {
+    fun showComponent() {
         binding.bottomNav.visibility = View.VISIBLE
         binding.toolbar.visibility = View.VISIBLE
     }
 
-    override fun onBackStackChanged() {
-        when (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_container)) {
-            is CameraXFragment -> {
-                hideComponent()
-            }
-            else -> {
-                showComponent()
-            }
-        }
+    fun hideNav() {
+        binding.bottomNav.visibility = View.GONE
     }
-
 }

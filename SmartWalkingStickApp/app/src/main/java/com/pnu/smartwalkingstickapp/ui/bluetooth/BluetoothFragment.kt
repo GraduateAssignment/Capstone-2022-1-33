@@ -31,6 +31,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.utils.TTS
 import com.pnu.smartwalkingstickapp.utils.WrappedDialogBasicTwoButton
@@ -248,7 +249,8 @@ class BluetoothFragment : Fragment() {
     @SuppressLint("HandlerLeak")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        val act = activity as MainActivity
+        act.showComponent()
         sharedPref = activity?.getPreferences(Context.MODE_PRIVATE)!!
         textToSpeech = context?.let { TTS(it) }!!
 
@@ -351,7 +353,7 @@ class BluetoothFragment : Fragment() {
 
         emergencyCallCell.setOnClickListener {
             when (val phonePermission =
-                ContextCompat.checkSelfPermission(context!!, Manifest.permission.CALL_PHONE)) {
+                ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CALL_PHONE)) {
                 PackageManager.PERMISSION_GRANTED -> showDialog()
                 else -> requestCallPhonePermission()
             }
