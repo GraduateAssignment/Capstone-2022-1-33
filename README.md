@@ -29,11 +29,11 @@
 
 
 # 🧸️ 사용법
-Android APK
+**Android APK**
 
 [앱 다운로드 바로가기](http://naver.me/FnifdpDC)
 
-요구조건
+**요구조건**
 - 안드로이드 OS
 - 최소 조건: 안드로이드 SDK 버전 26 이상
 # :pencil2: 회의내용
