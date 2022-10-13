@@ -3,7 +3,6 @@ package com.pnu.smartwalkingstickapp.ui.ocr_task
 import android.Manifest
 import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.icu.text.SimpleDateFormat
@@ -37,7 +36,6 @@ import org.tensorflow.lite.task.vision.detector.ObjectDetector
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 
 class CameraXFragment : Fragment() {
@@ -103,7 +101,7 @@ class CameraXFragment : Fragment() {
         if (feature == "detect") {
             val options = ObjectDetector.ObjectDetectorOptions.builder()
                 .setMaxResults(5)
-                .setScoreThreshold(0.5f)
+                .setScoreThreshold(0.3f)
                 .build()
             detector = ObjectDetector.createFromFileAndOptions(
                 safeContext, // the application context
@@ -145,8 +143,9 @@ class CameraXFragment : Fragment() {
                         val image = TensorImage.fromBitmap(imageProxy.toBitmap())
                         val results = detector.detect(image)
                         val people = getPeopleNum(results).toString()
-                        textToSpeech.play("사람이 $people 명 있습니다.")
-                        Toast.makeText(safeContext, people, Toast.LENGTH_SHORT).show()
+                        val msg = "사람이 $people 명 있습니다."
+                        textToSpeech.play(msg)
+                        Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
                         imageProxy.close()
                     }, 3000)
                 })
@@ -161,8 +160,7 @@ class CameraXFragment : Fragment() {
                                 .addOnSuccessListener {
                                     for (block in it.textBlocks) {
                                         textToSpeech.play(block.text)
-                                        Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT)
-                                            .show()
+                                        //Toast.makeText(safeContext, block.text, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                                 .addOnFailureListener {

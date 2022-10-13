@@ -42,9 +42,13 @@ class TTS (context: Context) {
     fun play(msg: String) {
         params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "1");
         if (!textToSpeech.isSpeaking) {
+            Log.d("jiwoo", "play: speaking123")
             ttsState.value = 1
             textToSpeech.speak(msg, TextToSpeech.QUEUE_FLUSH, params, "1")
             textToSpeech?.playSilentUtterance(750, TextToSpeech.QUEUE_ADD,TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID)
+        }
+        else{
+            Log.d("jiwoo", "play: speaking")
         }
     }
 }

@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -83,7 +82,14 @@ class ShowDirectionFragment : Fragment(), CoroutineScope {
         val act = activity as MainActivity
         act.showComponent()
         act.hideNav()
-        ttsSpeaker.play("경로를 검색중입니다. 잠시만 기다려주세요.")
+        if(showDirectionViewModel.isNavigating) {
+            Log.d(TAG, "onViewCreated: ")
+            ttsSpeaker.play("경로를 재탐색중입니다. 잠시만 기다려주세요.")
+        }
+        else{
+            Log.d(TAG, "onViewCreated: 12")
+            ttsSpeaker.play("경로를 검색중입니다. 잠시만 기다려주세요.")
+        }
 
         if(showDirectionViewModel.isNavigating) {
             binding.btnStartNavigate.text = "길안내 종료"
@@ -152,15 +158,12 @@ class ShowDirectionFragment : Fragment(), CoroutineScope {
             }
         }
         binding.btnStartNavigate.setOnLongClickListener {
-            val msg = {
-                if(showDirectionViewModel.isNavigating) {
-                    "길안내 종료"
-                }
-                else{
-                    "길안내 시작"
-                }
+            val msg = if(showDirectionViewModel.isNavigating) {
+                "길안내 종료"
+            } else{
+                "길안내 시작"
             }
-            ttsSpeaker.play(msg.toString())
+            ttsSpeaker.play(msg)
             true
         }
     }
@@ -206,7 +209,7 @@ class ShowDirectionFragment : Fragment(), CoroutineScope {
                             withContext(Dispatchers.Main) {
                                 setData(body!!.features)
                                 if (adapter.dataSet.isNotEmpty()) {
-                                    setMapPolyLine(adapter.dataSet)
+                                    setMapPolyLine(body.features)
                                 } else {
                                     Log.d(TAG, "initNavigateButton: empty")
                                 }
@@ -244,8 +247,8 @@ class ShowDirectionFragment : Fragment(), CoroutineScope {
     }
 
     private fun setData(featureList: List<Feature>) {
-        adapter.setData(featureList)
-        //adapter.setData(featureList.filter { it.properties.pointType == "GP" })
+        //adapter.setData(featureList)
+        adapter.setData(featureList.filter { it.geometry.type == "Point" })
     }
 
     @SuppressLint("MissingPermission")
