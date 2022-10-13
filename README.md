@@ -27,12 +27,9 @@
 
 
 # 🤼 구성원
-
-
-
-- 김주용
-- 신지우
-- 김수근
+[김수근](https://github.com/ILAPie)|[신지우](https://github.com/sjw989)| [김주용](https://github.com/Kim-JuYong)
+|------------------------------------|-------------------------------------|-------------------------------------|
+|![img](https://github.com/ILAPie.png?size=100?size=100) | ![img](https://github.com/sjw989.png?size=100?size=100) |![img](https://github.com/Kim-JuYong.png?size=100?size=100) |
 
 
 # :pencil2: 회의내용
