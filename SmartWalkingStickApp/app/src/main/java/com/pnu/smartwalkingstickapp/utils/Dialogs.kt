@@ -34,11 +34,11 @@ class WrappedDialogBasicTwoButton (context: Context) : Dialog(context){
         } ?: exitProcess(0)
 
         binding.run {
-//            dialogCloseBtn.text = closeBtnText
-//            dialogCustomBtn.text = customBtnText
             dialogContent.addTextChangedListener(PhoneNumberFormattingTextWatcher())
             dialogCloseBtn.setOnClickListener { clickListener?.dialogCloseClickListener()}
             dialogCustomBtn.setOnClickListener { clickListener?.dialogCustomClickListener() }
         }
     }
 }
+
+

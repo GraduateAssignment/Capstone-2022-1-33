@@ -100,7 +100,7 @@ class CameraXFragment : Fragment() {
 
         if (feature == "detect") {
             val options = ObjectDetector.ObjectDetectorOptions.builder()
-                .setMaxResults(5)
+                .setMaxResults(200)
                 .setScoreThreshold(0.3f)
                 .build()
             detector = ObjectDetector.createFromFileAndOptions(
@@ -145,7 +145,7 @@ class CameraXFragment : Fragment() {
                         val people = getPeopleNum(results).toString()
                         val msg = "사람이 $people 명 있습니다."
                         textToSpeech.play(msg)
-                        Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(safeContext, msg, Toast.LENGTH_SHORT).show()
                         imageProxy.close()
                     }, 3000)
                 })

@@ -22,18 +22,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.withCreated
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.pnu.smartwalkingstickapp.MainActivity
 import com.pnu.smartwalkingstickapp.R
 import com.pnu.smartwalkingstickapp.utils.TTS
 import com.pnu.smartwalkingstickapp.utils.WrappedDialogBasicTwoButton
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.withContext
+import okhttp3.Dispatcher
 import java.io.IOException
 import java.io.UnsupportedEncodingException
 import java.util.*
@@ -310,13 +315,13 @@ class BluetoothFragment : Fragment() {
                             }
                         }
                         if (!fail) {
-                            connectedDeviceCell.visibility = View.VISIBLE
-                            connectedDeviceName.text = device.name
+                            //connectedDeviceCell.visibility = View.VISIBLE
+                            //connectedDeviceName.text = device.name
                             connectedThread = ConnectedThread(mSocket!!, handler)
                             connectedThread.start()
                             flag = true
                             handler.obtainMessage(CONNECTING_STATUS, 1, -1, name).sendToTarget()
-                            textToSpeech.play("연결되었습니다.")
+                            //textToSpeech.play("연결되었습니다.")
                         }
                     }
                 }.start()
